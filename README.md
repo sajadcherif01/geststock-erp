@@ -17,9 +17,18 @@ L'application sera disponible a l'adresse :
 
 `https://sajadcherif01.github.io/geststock-erp/`
 
-## Stockage des donnees
+## Stockage et synchronisation
 
-GestStock utilise le stockage local du navigateur (`localStorage`). Les donnees restent dans le navigateur de l'utilisateur. Il faut utiliser la fonction d'export de sauvegarde avant de changer de navigateur, vider le cache ou migrer vers un autre poste.
+GestStock utilise un fichier central `data/geststock-db.json` pour synchroniser les donnees entre PC et telephone via GitHub Pages.
+
+Comptes par defaut :
+
+- Admin : `admin` / `1234`
+- Visiteur : `visiteur` / `0000`
+
+Le mode Admin peut modifier les donnees. Le mode Visiteur peut consulter et imprimer.
+
+Important : pour sauvegarder les modifications depuis l'application vers GitHub, l'admin doit renseigner un token GitHub fine-grained avec acces `Contents: Read and write` au depot. Sans token, l'application peut lire la base GitHub mais ne peut pas ecrire dedans.
 
 ## Fichiers
 

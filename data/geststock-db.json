@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-04-30T00:00:00.000Z",
+  "users": [
+    {
+      "id": "u-admin",
+      "name": "admin",
+      "role": "admin",
+      "passwordHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"
+    },
+    {
+      "id": "u-visiteur",
+      "name": "visiteur",
+      "role": "visitor",
+      "passwordHash": "9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0"
+    }
+  ],
+  "data": {
+    "articles": [],
+    "clients": [],
+    "suppliers": [],
+    "sites": [],
+    "purchases": [],
+    "sales": [],
+    "transfers": [],
+    "inventories": [],
+    "clientPrices": [],
+    "supplierPrices": [],
+    "payments": [],
+    "rolls": [],
+    "rollCuts": []
+  }
+}
