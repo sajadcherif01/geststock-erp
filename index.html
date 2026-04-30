@@ -61,6 +61,9 @@ button,input,select{font:inherit}
 .topbar-right{display:flex;align-items:center;gap:8px;padding-left:16px;border-left:1px solid rgba(255,255,255,.08);margin-left:auto;flex-shrink:0}
 .icon-btn{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#9ca3af;cursor:pointer;padding:7px 10px;font-size:13px;transition:.15s;white-space:nowrap}
 .icon-btn:hover{background:rgba(255,255,255,.12);color:#fff}
+.role-chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#e5e7eb;font-size:12px;font-weight:700;white-space:nowrap}
+.role-chip.visitor{color:#fbbf24}
+.role-chip.admin{color:#86efac}
 
 /* â”€â”€ SHELL â”€â”€ */
 .shell{max-width:1480px;margin:0 auto;padding:20px 20px}
@@ -240,6 +243,40 @@ input::placeholder{color:#d1d5db}
 /* â”€â”€ INLINE EDIT â”€â”€ */
 .inline-edit-row td input,
 .inline-edit-row td select{padding:5px 8px;font-size:12px;border-radius:6px;width:100%;min-width:60px}
+
+/* ACCESS CONTROL */
+body.role-visitor .admin-only{display:none!important}
+body.role-visitor .write-action{display:none!important}
+.readonly-banner{display:none;margin-bottom:14px;padding:12px 16px;border-radius:var(--radius-sm);background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:13px;font-weight:600}
+body.role-visitor .readonly-banner{display:block}
+
+/* MOBILE */
+@media(max-width:760px){
+  body{font-size:13px}
+  .topbar{position:sticky;top:0;display:grid;grid-template-columns:1fr;gap:10px;padding:10px 12px}
+  .brand{border-right:none;padding-right:0}
+  .main-tabs{height:auto;padding-left:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;overflow:visible}
+  .tab-btn{height:40px;justify-content:center;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:0 8px;font-size:11px;white-space:normal;text-align:center;line-height:1.15}
+  .tab-btn.active{border-color:rgba(96,165,250,.65)}
+  .topbar-right{border-left:none;padding-left:0;margin-left:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .topbar-right .icon-btn,.topbar-right .role-chip{width:100%;justify-content:center}
+  .shell{padding:12px 10px}
+  .card{padding:14px;border-radius:10px}
+  .side{border-radius:10px;padding:8px;overflow:auto}
+  .side-section{display:flex;gap:6px;margin-bottom:0;align-items:center}
+  .side-label{display:none}
+  .sub-btn{width:auto;min-width:max-content;border-left:none;border-bottom:2px solid transparent;padding:8px 10px}
+  .sub-btn.active{border-left:none;border-bottom-color:var(--brand)}
+  .panel-head{display:block}
+  .panel-actions,.toolbar,.modal-actions{display:grid;grid-template-columns:1fr;gap:8px}
+  .btn{width:100%;justify-content:center;min-height:40px}
+  .form-grid,.form-grid.tight,.quick-grid{grid-template-columns:1fr!important}
+  .analytics-grid{grid-template-columns:1fr}
+  .table{min-width:760px}
+  .table-wrap{border-radius:10px}
+  .modal-overlay{align-items:flex-end;padding:8px}
+  .modal-box{width:100%;max-height:92vh;border-radius:14px;padding:18px}
+}
 </style>
 </head>
 <body>
@@ -262,6 +299,9 @@ input::placeholder{color:#d1d5db}
     <button class="tab-btn" data-main="analytics">Analyses</button>
   </div>
   <div class="topbar-right">
+    <span class="role-chip visitor" id="role-chip">Mode Visiteur</span>
+    <button class="icon-btn" id="role-login">Admin</button>
+    <button class="icon-btn admin-only" id="role-logout">Visiteur</button>
     <button class="icon-btn" id="toggle-dashboard">KPIs</button>
     <button class="icon-btn" id="btn-reset-stock-modal">Remise a zero stock</button>
     <button class="icon-btn danger-tab" id="reset-app">Reset</button>
@@ -270,6 +310,7 @@ input::placeholder{color:#d1d5db}
 
 <div class="shell">
   <div class="notif" id="notif"></div>
+  <div class="readonly-banner">Mode Visiteur actif : consultation et impression seulement. Aucune modification des donnees n'est autorisee.</div>
 
   <!-- KPI DASHBOARD -->
   <div id="dashboard-wrap" class="kpi-row" style="display:none">
@@ -390,6 +431,24 @@ input::placeholder{color:#d1d5db}
       <div class="card panel" id="ana-rapport"></div>
     </div>
   </section>
+</div>
+
+<!-- MODAL: ROLE ADMIN -->
+<div id="role-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box" style="max-width:420px">
+    <h3>Connexion Admin</h3>
+    <p class="modal-sub">Entrez le code admin pour autoriser l'ajout, la modification et la suppression.</p>
+    <div class="form-grid">
+      <div class="field full-col">
+        <label>Code admin</label>
+        <input id="admin-code-input" type="password" inputmode="numeric" placeholder="Code admin">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn primary" id="admin-code-ok">Activer Admin</button>
+      <button class="btn" id="admin-code-cancel">Annuler</button>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL: CONFIRM -->
@@ -534,6 +593,52 @@ let edit={article:-1,client:-1,supplier:-1,site:-1,cp:-1,sp:-1};
 let view={clientAccount:'',supplierAccount:''};
 let confirmCallback=null;
 let restoreData=null;
+const ADMIN_CODE='1234';
+let currentRole=sessionStorage.getItem('gs3_role')==='admin'?'admin':'visitor';
+
+function isAdmin(){return currentRole==='admin'}
+function requireAdmin(){
+  if(isAdmin())return true;
+  notify('Mode Visiteur : action interdite. Connectez-vous en Admin pour modifier les donnees.',true);
+  return false;
+}
+function setRole(role){
+  currentRole=role==='admin'?'admin':'visitor';
+  sessionStorage.setItem('gs3_role',currentRole);
+  applyAccessMode();
+}
+function applyAccessMode(){
+  document.body.classList.toggle('role-admin',isAdmin());
+  document.body.classList.toggle('role-visitor',!isAdmin());
+  const chip=$('role-chip');
+  if(chip){
+    chip.textContent=isAdmin()?'Mode Admin':'Mode Visiteur';
+    chip.className='role-chip '+(isAdmin()?'admin':'visitor');
+  }
+  const login=$('role-login'),logout=$('role-logout');
+  if(login)login.style.display=isAdmin()?'none':'inline-flex';
+  if(logout)logout.style.display=isAdmin()?'inline-flex':'none';
+  const writeNames=['saveArticle','saveClient','saveSupplier','saveSite','saveClientPrice','saveSupplierPrice','savePurchase','saveSale','saveTransfer','saveInventory','saveAccountPayment','confirmSession','removeRow','removeSite','removeSessionLine','openEditLine','editArticle','editClientRow','editSupplierRow','editSiteRow','editClientPrice','editSupplierPrice','clearForm','clearFormMv','clearFormInv','importExcelInventaire','confirmExcelInventaire','cancelExcelInventaire','applyResetStock','exportBackup'];
+  document.querySelectorAll('button').forEach(btn=>{
+    const onclick=btn.getAttribute('onclick')||'';
+    const id=btn.id||'';
+    const text=(btn.textContent||'').toLowerCase();
+    const isWrite=writeNames.some(name=>onclick.includes(name))||['reset-app','btn-reset-stock-modal','confirm-modal-ok','edit-line-save','effect-deduct-now','effect-wait-due','due-modal-paid','due-modal-unpaid'].includes(id)||/enregistrer|ajouter|modifier|supprimer|confirmer|reset|remise a zero|import|annuler ligne/.test(text);
+    btn.classList.toggle('write-action',isWrite);
+    if(!isAdmin()&&isWrite)btn.disabled=true;
+    else btn.disabled=false;
+  });
+  document.querySelectorAll('.quick-entry input,.quick-entry select,.form-grid input,.form-grid select').forEach(el=>{
+    const keepEnabled=['client-account-select','supplier-account-select','admin-code-input'].includes(el.id)||el.closest('#role-modal')||el.closest('[id$="-print-options"]');
+    if(!isAdmin()&&!keepEnabled){
+      el.setAttribute('readonly','readonly');
+      if(el.tagName==='SELECT')el.disabled=true;
+    }else{
+      el.removeAttribute('readonly');
+      if(el.tagName==='SELECT')el.disabled=false;
+    }
+  });
+}
 
 function save(){try{CKEYS.forEach(k=>localStorage.setItem('gs3_'+k,JSON.stringify(db[k])))}catch(e){}}
 function load(){
@@ -545,6 +650,7 @@ function load(){
 
 // â”€â”€â”€â”€â”€ EXPORT / RESTORE â”€â”€â”€â”€â”€
 function exportBackup(){
+  if(!requireAdmin())return;
   const data={version:'3.0',date:today(),...Object.fromEntries(CKEYS.map(k=>[k,db[k]]))};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
@@ -552,6 +658,7 @@ function exportBackup(){
   notify('Sauvegarde exportee avec succes');
 }
 function openResetStockModal(){
+  if(!requireAdmin())return;
   // Populate current counts before showing
   const counts=[
     `📥 Achats : <strong>${db.purchases.length}</strong> enregistrement(s)`,
@@ -564,6 +671,7 @@ function openResetStockModal(){
 }
 // (restauration remplacee par remise a zero stock)
 function applyResetStock(){
+  if(!requireAdmin())return;
   if(!confirm('⚠ CONFIRMER la remise a zero du stock ?\n\nCeci va effacer :\n- Tous les achats (entrees stock)\n- Toutes les ventes (sorties stock)\n- Tous les transferts\n- Tout l\'inventaire importe\n\nLa base de donnees (articles, clients, fournisseurs, prix) reste intacte.\n\nCette action est irreversible.'))return;
   // Effacer uniquement les mouvements et le stock, pas la base de donnees
   db.purchases=[];
@@ -1624,6 +1732,7 @@ function saveAccountPayment(type){
   doSavePayment({type,name,date,amount,mode,due,note,deductNow:true});
 }
 function doSavePayment(p){
+  if(!requireAdmin())return;
   db.payments.push({id:uid('pay'),type:p.type,name:p.name,date:p.date,amount:p.amount,mode:p.mode,due:p.due||'',note:p.note,deductNow:p.deductNow});
   // Clear form
   const type=p.type;
@@ -1669,6 +1778,7 @@ function openEditLine(type,i){
   $('edit-line-modal').style.display='flex';
 }
 $('edit-line-save').addEventListener('click',function(){
+  if(!requireAdmin())return;
   const{type,index}=editLineState;if(index<0)return;
   const r=sessionLines[type][index];
   r.date=$('el-date').value||r.date;
@@ -2073,6 +2183,7 @@ function refresh(){
   // renderBenefice removed - module supprimé
   updateMetrics();
   sanitizeVisibleText();
+  applyAccessMode();
   save();
 }
 
@@ -2096,11 +2207,12 @@ function bindStaticEvents(){
   });
 
   // Modals
-  $('confirm-modal-ok').addEventListener('click',()=>{if(confirmCallback)confirmCallback();});
+  $('confirm-modal-ok').addEventListener('click',()=>{if(!requireAdmin())return;if(confirmCallback)confirmCallback();});
   $('confirm-modal-cancel').addEventListener('click',()=>{$('confirm-modal').style.display='none';});
 
   // Reset
   $('reset-app').addEventListener('click',()=>{
+    if(!requireAdmin())return;
     if(confirm('⚠ Supprimer TOUTES les donnees ? Cette action est irreversible.\n\nConseil : Exportez une sauvegarde avant (bouton Remise a zero â†’ Exporter sauvegarde).'))
     {CKEYS.forEach(k=>db[k]=[]);sessionLines={purchase:[],sale:[],transfer:[],inventory:[]};edit={article:-1,client:-1,supplier:-1,site:-1,cp:-1,sp:-1};initDefaults();refresh();notify('Application reinitialisee');}
   });
@@ -2113,6 +2225,25 @@ function bindStaticEvents(){
 
   // Restore modal
   $('btn-reset-stock-modal').addEventListener('click',()=>{openResetStockModal();});
+
+  // Roles
+  $('role-login')?.addEventListener('click',()=>{
+    $('admin-code-input').value='';
+    $('role-modal').style.display='flex';
+    setTimeout(()=>$('admin-code-input')?.focus(),50);
+  });
+  $('role-logout')?.addEventListener('click',()=>{setRole('visitor');notify('Mode Visiteur active')});
+  $('admin-code-cancel')?.addEventListener('click',()=>{$('role-modal').style.display='none';});
+  $('admin-code-ok')?.addEventListener('click',()=>{
+    if($('admin-code-input').value===ADMIN_CODE){
+      $('role-modal').style.display='none';
+      setRole('admin');
+      notify('Mode Admin active');
+    }else{
+      notify('Code admin incorrect',true);
+    }
+  });
+  $('admin-code-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')$('admin-code-ok').click();});
 
   // Close modals on overlay click
   document.querySelectorAll('.modal-overlay').forEach(m=>{
@@ -2145,6 +2276,15 @@ window.importExcelInventaire=importExcelInventaire;window.confirmExcelInventaire
 window.exportBackup=exportBackup;window.openResetStockModal=openResetStockModal;window.applyResetStock=applyResetStock;
 window.openEditLine=openEditLine;window.renderAnalytics=renderAnalytics;
 window.renderBenefice=renderBenefice;
+
+function adminWrap(fn){return function(...args){if(!requireAdmin())return;return fn.apply(this,args)}}
+[
+  'saveArticle','saveClient','saveSupplier','saveSite','saveClientPrice','saveSupplierPrice',
+  'savePurchase','saveSale','saveTransfer','saveInventory','saveAccountPayment',
+  'editArticle','editClientRow','editSupplierRow','editSiteRow','editClientPrice','editSupplierPrice',
+  'removeRow','removeSite','clearForm','clearFormMv','clearFormInv','removeSessionLine','confirmSession',
+  'importExcelInventaire','confirmExcelInventaire','cancelExcelInventaire','openResetStockModal','applyResetStock','openEditLine','exportBackup'
+].forEach(name=>{if(typeof window[name]==='function')window[name]=adminWrap(window[name]);});
 
 // â”€â”€â”€â”€â”€ BENEFICE â”€â”€â”€â”€â”€
 let beneficePeriod=30;
@@ -2323,11 +2463,13 @@ window.printBenefice=window.printBeneficeComplet;
 function bindEffectAndDueModals(){
   // Effect modal buttons
   $('effect-deduct-now')?.addEventListener('click',()=>{
+    if(!requireAdmin())return;
     if(!pendingPayment)return;
     doSavePayment({...pendingPayment,deductNow:true});
     pendingPayment=null;$('effect-modal').style.display='none';
   });
   $('effect-wait-due')?.addEventListener('click',()=>{
+    if(!requireAdmin())return;
     if(!pendingPayment)return;
     doSavePayment({...pendingPayment,deductNow:false});
     pendingPayment=null;$('effect-modal').style.display='none';
@@ -2337,10 +2479,12 @@ function bindEffectAndDueModals(){
   // Due modal buttons
   let currentDuePaymentId=null;
   $('due-modal-paid')?.addEventListener('click',()=>{
+    if(!requireAdmin())return;
     if(currentDuePaymentId){const p=db.payments.find(x=>x.id===currentDuePaymentId);if(p){p.paidStatus='paid';save();refresh();}}
     $('due-modal').style.display='none';checkDuePayments();
   });
   $('due-modal-unpaid')?.addEventListener('click',()=>{
+    if(!requireAdmin())return;
     if(currentDuePaymentId){const p=db.payments.find(x=>x.id===currentDuePaymentId);if(p){p.paidStatus='unpaid';save();refresh();}}
     $('due-modal').style.display='none';checkDuePayments();
   });
@@ -2384,4 +2528,3 @@ refresh();
 </script>
 </body>
 </html>
-
