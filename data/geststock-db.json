@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updatedAt": "2026-04-30T16:13:39.418Z",
+  "updatedAt": "2026-04-30T18:32:27.138Z",
   "users": [
     {
       "id": "u-admin",
@@ -22,16 +22,86 @@
     }
   ],
   "data": {
-    "articles": [],
-    "clients": [],
-    "suppliers": [],
-    "sites": [],
+    "articles": [
+      {
+        "id": "art-1777573739810-du415",
+        "name": "Luna",
+        "type": "tapis",
+        "defaultPm2": 230
+      },
+      {
+        "id": "art-1777573755330-j6173",
+        "name": "Topas",
+        "type": "moquette",
+        "defaultPm2": 250
+      }
+    ],
+    "clients": [
+      {
+        "id": "cli-1777573775277-w2jwh",
+        "name": "Firas",
+        "city": "Casablanca",
+        "initial": 1000
+      },
+      {
+        "id": "cli-1777573797939-hoqei",
+        "name": "Othman",
+        "city": "Tanger",
+        "initial": 50000
+      }
+    ],
+    "suppliers": [
+      {
+        "id": "sup-1777573816713-zvunu",
+        "name": "Rugessa",
+        "city": "Mohamedia",
+        "initial": 100000
+      }
+    ],
+    "sites": [
+      {
+        "id": "site-1777573892070-o3kjd",
+        "name": "Koreaa",
+        "city": "Casablanca"
+      },
+      {
+        "id": "site-1777573904671-9hq71",
+        "name": "Cherifa",
+        "city": "Casablanca"
+      }
+    ],
     "purchases": [],
     "sales": [],
     "transfers": [],
     "inventories": [],
-    "clientPrices": [],
-    "supplierPrices": [],
+    "clientPrices": [
+      {
+        "id": "cp-1777573840648-n4urh",
+        "client": "Othman",
+        "article": "Luna",
+        "pm2": 190
+      },
+      {
+        "id": "cp-1777573856985-bcllp",
+        "client": "Firas",
+        "article": "Topas",
+        "pm2": 220
+      }
+    ],
+    "supplierPrices": [
+      {
+        "id": "sp-1777573868960-3psjm",
+        "supplier": "Rugessa",
+        "article": "Luna",
+        "pm2": 157
+      },
+      {
+        "id": "sp-1777573878595-mo3wz",
+        "supplier": "Rugessa",
+        "article": "Topas",
+        "pm2": 170
+      }
+    ],
     "payments": [],
     "rolls": [],
     "rollCuts": []
