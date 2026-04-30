@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updatedAt": "2026-04-30T18:37:01.896Z",
+  "updatedAt": "2026-04-30T18:38:08.058Z",
   "users": [
     {
       "id": "u-admin",
@@ -124,6 +124,40 @@
         "sourceLength": 2000,
         "remainingLength": 1690,
         "sourceKey": "Topas|White|2000|200"
+      },
+      {
+        "id": "sale-1777574286144-hzcz7",
+        "client": "Othman",
+        "article": "Luna",
+        "site": "site-1777573904671-9hq71",
+        "color": "Biege",
+        "length": 300,
+        "width": 200,
+        "qty": 10,
+        "pm2": 190,
+        "date": "2026-04-30",
+        "note": "",
+        "key": "Luna|Biege|300|200",
+        "total": 11400,
+        "stockIgnore": false,
+        "horsStock": false
+      },
+      {
+        "id": "sale-1777574286144-2kxle",
+        "client": "Othman",
+        "article": "Palace",
+        "site": "",
+        "color": "Biege",
+        "length": 350,
+        "width": 200,
+        "qty": 5,
+        "pm2": 300,
+        "date": "2026-04-30",
+        "note": "",
+        "key": "Palace|Biege|350|200",
+        "total": 10500,
+        "stockIgnore": true,
+        "horsStock": true
       }
     ],
     "transfers": [],
