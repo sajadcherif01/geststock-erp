@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>GestStock ERP V4 - Documentation fonctionnelle</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; }
+    body { font-family: Arial, Helvetica, sans-serif; color: #172033; margin: 0; line-height: 1.45; font-size: 12px; }
+    h1, h2, h3 { margin: 0; color: #111827; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 18px; border-bottom: 2px solid #2563eb; padding-bottom: 5px; margin-top: 22px; }
+    h3 { font-size: 14px; margin-top: 12px; }
+    p { margin: 6px 0; }
+    .cover { padding: 22px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; margin-bottom: 18px; }
+    .meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
+    .meta div, .box, .node { border: 1px solid #d7deea; border-radius: 8px; background: #fff; padding: 10px; }
+    .label { color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+    .value { font-weight: 700; margin-top: 3px; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .flow { display: grid; grid-template-columns: 1fr 24px 1fr 24px 1fr; align-items: center; gap: 6px; margin: 10px 0; }
+    .arrow { text-align: center; color: #2563eb; font-weight: 700; font-size: 18px; }
+    .node { min-height: 58px; background: #f8fafc; }
+    .node strong { display: block; color: #1d4ed8; margin-bottom: 3px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; page-break-inside: avoid; }
+    th, td { border: 1px solid #d7deea; padding: 7px; vertical-align: top; }
+    th { background: #f1f5f9; text-align: left; color: #334155; }
+    ul { margin: 6px 0 0 18px; padding: 0; }
+    li { margin: 3px 0; }
+    .schema { border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; margin-top: 10px; page-break-inside: avoid; }
+    .schema-title { font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+    .badge { display: inline-block; background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+    .page-break { page-break-before: always; }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <h1>GestStock ERP V4</h1>
+    <p>Documentation fonctionnelle en français avec schémas de traitement, modules et circulation des données.</p>
+    <div class="meta">
+      <div><span class="label">Application</span><div class="value">Gestion de stock et comptes</div></div>
+      <div><span class="label">Format</span><div class="value">HTML autonome</div></div>
+      <div><span class="label">Publication</span><div class="value">GitHub Pages</div></div>
+    </div>
+  </section>
+
+  <h2>1. Objectif de l'application</h2>
+  <p>GestStock ERP V4 centralise la gestion commerciale et logistique d'une activite de tapis/moquette : articles, clients, fournisseurs, sites, achats, ventes, transferts, inventaires, comptes et analyses.</p>
+  <div class="box">
+    <strong>Principe general :</strong> les donnees de reference alimentent les operations. Les operations modifient le stock et les comptes. Les tableaux de bord et rapports exploitent ces donnees pour donner une vision de gestion.
+  </div>
+
+  <h2>2. Schéma global</h2>
+  <div class="schema">
+    <div class="schema-title">Flux principal</div>
+    <div class="flow">
+      <div class="node"><strong>Base donnees</strong>Articles, clients, fournisseurs, sites et prix.</div>
+      <div class="arrow">→</div>
+      <div class="node"><strong>Operations</strong>Achats, ventes, transferts et inventaires.</div>
+      <div class="arrow">→</div>
+      <div class="node"><strong>Resultats</strong>Stock, comptes, KPIs, analyses et conseils.</div>
+    </div>
+  </div>
+
+  <h2>3. Modules detailles</h2>
+  <table>
+    <thead><tr><th>Module</th><th>Sous-modules</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Base donnees</strong></td><td>Articles, clients, fournisseurs, prix clients, prix fournisseurs, sites</td><td>Creer les donnees de reference utilisees par toutes les operations.</td></tr>
+      <tr><td><strong>Operations</strong></td><td>Achat fournisseur, vente client, transfert, historique</td><td>Enregistrer les mouvements qui entrent, sortent ou deplacent le stock.</td></tr>
+      <tr><td><strong>Import Stock</strong></td><td>Inventaire manuel, import Excel, historique inventaires</td><td>Ajouter ou ajuster le stock sans generer d'ecriture d'achat fournisseur.</td></tr>
+      <tr><td><strong>Comptes</strong></td><td>Compte client, compte fournisseur</td><td>Suivre soldes initiaux, operations, paiements, effets et echeances.</td></tr>
+      <tr><td><strong>Stock</strong></td><td>Stock global, stock par site, suggestions</td><td>Voir quantites, surfaces, valeurs et besoins de reapprovisionnement.</td></tr>
+      <tr><td><strong>Analyses</strong></td><td>Top ventes, rotation, vitesse, rapport et conseils</td><td>Analyser les ventes, les produits lents et les recommandations de gestion.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. Schema des donnees</h2>
+  <div class="grid">
+    <div class="box"><span class="badge">Reference</span><h3>Articles</h3><p>Nom, type tapis/moquette, prix par defaut, dimensions utilisees dans les operations.</p></div>
+    <div class="box"><span class="badge">Reference</span><h3>Clients / Fournisseurs</h3><p>Nom, ville, solde initial et rattachement aux operations commerciales.</p></div>
+    <div class="box"><span class="badge">Reference</span><h3>Sites</h3><p>Magasins ou depots permettant de localiser le stock.</p></div>
+    <div class="box"><span class="badge">Prix</span><h3>Prix clients / fournisseurs</h3><p>Prix au m2 par article et par tiers pour calculer automatiquement les montants.</p></div>
+    <div class="box"><span class="badge">Mouvements</span><h3>Achats / Ventes / Transferts</h3><p>Quantite, article, couleur, dimensions, site, prix et total.</p></div>
+    <div class="box"><span class="badge">Comptes</span><h3>Paiements</h3><p>Mode, montant, date, echeance, statut paye/impaye et deduction immediate ou differee.</p></div>
+  </div>
+
+  <h2>5. Calculs principaux</h2>
+  <table>
+    <thead><tr><th>Calcul</th><th>Formule / logique</th><th>Utilisation</th></tr></thead>
+    <tbody>
+      <tr><td>Surface</td><td>Longueur x largeur x quantite / 10 000</td><td>Valorisation en m2.</td></tr>
+      <tr><td>Stock par site</td><td>Achats + inventaires entrants - ventes - transferts sortants + transferts entrants</td><td>Controle des disponibilites.</td></tr>
+      <tr><td>Compte client</td><td>Solde initial + ventes - paiements deductibles</td><td>Suivi du reste a payer.</td></tr>
+      <tr><td>Compte fournisseur</td><td>Solde initial + achats - paiements deductibles</td><td>Suivi des dettes fournisseurs.</td></tr>
+      <tr><td>Reapprovisionnement</td><td>Comparaison ventes, stock actuel, achats et import inventaire</td><td>Suggestion automatique de priorite.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="page-break">6. Processus detailles</h2>
+  <div class="schema">
+    <div class="schema-title">Achat fournisseur</div>
+    <div class="flow">
+      <div class="node"><strong>Saisie</strong>Fournisseur, article, site, dimensions, quantite.</div>
+      <div class="arrow">→</div>
+      <div class="node"><strong>Calcul</strong>Prix m2, surface, total achat.</div>
+      <div class="arrow">→</div>
+      <div class="node"><strong>Impact</strong>Stock augmente et compte fournisseur augmente.</div>
+    </div>
+  </div>
+  <div class="schema">
+    <div class="schema-title">Vente client</div>
+    <div class="flow">
+      <div class="node"><strong>Saisie</strong>Client, article, site source, dimensions, quantite.</div>
+      <div class="arrow">→</div>
+      <div class="node"><strong>Controle</strong>Disponibilite du stock, prix client et total.</div>
+      <div class="arrow">→</div>
+      <div class="node"><strong>Impact</strong>Stock diminue et compte client augmente.</div>
+    </div>
+  </div>
+  <div class="schema">
+    <div class="schema-title">Import Excel inventaire</div>
+    <div class="flow">
+      <div class="node"><strong>Fichier</strong>Lecture du fichier Excel.</div>
+      <div class="arrow">→</div>
+      <div class="node"><strong>Apercu</strong>Validation des lignes importees.</div>
+      <div class="arrow">→</div>
+      <div class="node"><strong>Impact</strong>Ajustement stock sans achat fournisseur.</div>
+    </div>
+  </div>
+
+  <h2>7. Hebergement GitHub Pages</h2>
+  <p>L'application etant un fichier HTML autonome, elle peut etre publiee directement avec GitHub Pages. Le fichier doit s'appeler <strong>index.html</strong> a la racine du depot.</p>
+  <ul>
+    <li>Depot recommande : <strong>geststock-erp</strong></li>
+    <li>Branche : <strong>main</strong></li>
+    <li>Source GitHub Pages : <strong>Deploy from a branch / root</strong></li>
+    <li>URL attendue : <strong>https://sajadcherif01.github.io/geststock-erp/</strong></li>
+  </ul>
+
+  <h2>8. Points importants</h2>
+  <ul>
+    <li>Les donnees sont stockees dans le navigateur avec <strong>localStorage</strong>.</li>
+    <li>Un export de sauvegarde est necessaire avant migration ou changement de poste.</li>
+    <li>L'import Excel depend du chargement de la bibliotheque XLSX depuis CDN si elle n'est pas deja disponible.</li>
+    <li>GitHub Pages heberge l'interface, mais ne transforme pas l'application en base de donnees multi-utilisateur.</li>
+  </ul>
+</body>
+</html>

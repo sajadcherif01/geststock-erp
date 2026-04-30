@@ -1,0 +1,2387 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GestStock ERP V4</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+:root{
+  --bg:#f0f4f9;
+  --panel:#ffffff;
+  --ink:#111827;
+  --mut:#6b7280;
+  --line:#e5eaf2;
+  --brand:#1a56db;
+  --brand-dark:#1344b8;
+  --brand-light:#eff6ff;
+  --warn:#d97706;
+  --warn-bg:#fffbeb;
+  --danger:#dc2626;
+  --danger-bg:#fef2f2;
+  --ok:#059669;
+  --ok-bg:#ecfdf5;
+  --purple:#7c3aed;
+  --purple-bg:#f5f3ff;
+  --radius:14px;
+  --radius-sm:8px;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
+  --shadow-lg:0 4px 24px rgba(0,0,0,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px}
+button,input,select{font:inherit}
+
+/* â”€â”€ TOPBAR â”€â”€ */
+.topbar{
+  background:#111827;
+  padding:0 24px;
+  display:flex;align-items:center;gap:0;
+  position:sticky;top:0;z-index:50;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  min-height:56px;
+}
+.brand{display:flex;align-items:center;gap:10px;padding-right:24px;border-right:1px solid rgba(255,255,255,.1);margin-right:0}
+.brand-icon{width:32px;height:32px;background:linear-gradient(135deg,#1a56db,#7c3aed);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;font-family:"Space Grotesk",sans-serif;letter-spacing:-.3px;flex-shrink:0}
+.brand-text h1{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#fff;line-height:1}
+.brand-text p{font-size:10px;color:#6b7280;margin-top:2px}
+.main-tabs{display:flex;align-items:stretch;gap:0;padding-left:8px;flex:1;height:56px;overflow-x:auto;scrollbar-width:none}
+.main-tabs::-webkit-scrollbar{display:none}
+.tab-btn{
+  background:transparent;border:none;color:#9ca3af;
+  padding:0 18px;cursor:pointer;font-size:13px;font-weight:500;
+  white-space:nowrap;transition:.15s;
+  border-bottom:2px solid transparent;
+  display:flex;align-items:center;gap:6px;
+}
+.tab-btn:hover{color:#fff;background:rgba(255,255,255,.05)}
+.tab-btn.active{color:#fff;border-bottom-color:#1a56db;background:rgba(26,86,219,.08)}
+.tab-btn.danger-tab{color:#f87171}
+.tab-btn.danger-tab:hover{background:rgba(239,68,68,.1)}
+.topbar-right{display:flex;align-items:center;gap:8px;padding-left:16px;border-left:1px solid rgba(255,255,255,.08);margin-left:auto;flex-shrink:0}
+.icon-btn{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#9ca3af;cursor:pointer;padding:7px 10px;font-size:13px;transition:.15s;white-space:nowrap}
+.icon-btn:hover{background:rgba(255,255,255,.12);color:#fff}
+
+/* â”€â”€ SHELL â”€â”€ */
+.shell{max-width:1480px;margin:0 auto;padding:20px 20px}
+
+/* â”€â”€ DASHBOARD â”€â”€ */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow);cursor:default;transition:.15s}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.kpi .k{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mut);font-weight:600}
+.kpi .v{font-size:22px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--ink);line-height:1}
+.kpi .trend{font-size:11px;color:var(--mut)}
+.kpi.kpi-blue .v{color:var(--brand)}
+.kpi.kpi-ok .v{color:var(--ok)}
+.kpi.kpi-warn .v{color:var(--warn)}
+.kpi.kpi-purple .v{color:var(--purple)}
+
+/* â”€â”€ MODULE LAYOUT â”€â”€ */
+.module{display:none}
+.module.active{display:grid;grid-template-columns:220px 1fr;gap:16px}
+
+/* â”€â”€ SIDEBAR â”€â”€ */
+.side{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:12px;height:max-content;position:sticky;top:76px;box-shadow:var(--shadow)}
+.side-section{margin-bottom:16px}
+.side-section:last-child{margin-bottom:0}
+.side-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--mut);font-weight:700;padding:0 8px;margin-bottom:6px}
+.sub-btn{
+  width:100%;text-align:left;background:transparent;border:none;
+  border-radius:var(--radius-sm);padding:9px 12px;cursor:pointer;
+  color:var(--mut);font-size:13px;font-weight:500;transition:.12s;
+  display:flex;align-items:center;gap:0;margin-bottom:2px;
+  border-left:3px solid transparent;
+}
+.sub-btn:hover{background:#f3f4f6;color:var(--ink);border-left-color:#d1d5db}
+.sub-btn.active{background:var(--brand-light);color:var(--brand);font-weight:600;border-left-color:var(--brand)}
+.sub-btn .icon{display:none}
+.sub-btn .badge-count{margin-left:auto;background:var(--brand);color:#fff;border-radius:999px;font-size:10px;font-weight:700;padding:1px 6px;min-width:18px;text-align:center}
+
+/* â”€â”€ PANEL â”€â”€ */
+.panel{display:none}
+.panel.active{display:block}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+
+/* â”€â”€ PANEL HEAD â”€â”€ */
+.panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+.panel-head h2{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700}
+.panel-head p{color:var(--mut);font-size:12px;margin-top:4px}
+.panel-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* â”€â”€ FORMS â”€â”€ */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:14px}
+.form-grid.tight{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mut);font-weight:700}
+input,select{
+  background:#fff;border:1px solid #d1d5db;border-radius:var(--radius-sm);
+  padding:9px 11px;color:var(--ink);transition:.15s;outline:none;
+}
+input:focus,select:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(26,86,219,.1)}
+input[readonly]{background:#f8fafc;color:var(--brand);font-weight:600;cursor:default}
+input::placeholder{color:#d1d5db}
+.full-col{grid-column:1/-1}
+
+/* â”€â”€ TOOLBAR â”€â”€ */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.btn{
+  border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:8px 14px;cursor:pointer;font-size:13px;font-weight:500;
+  transition:.15s;background:#fff;color:var(--ink);display:inline-flex;align-items:center;gap:6px;
+  white-space:nowrap;
+}
+.btn:hover{border-color:#9ca3af;background:#f9fafb}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{background:var(--brand-dark)}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.ok:hover{background:#047857}
+.btn.alt{background:var(--brand-light);border-color:#bfdbfe;color:var(--brand)}
+.btn.alt:hover{background:#dbeafe}
+.btn.danger{background:var(--danger-bg);border-color:#fecaca;color:var(--danger)}
+.btn.danger:hover{background:#fee2e2}
+.btn.warn{background:var(--warn-bg);border-color:#fde68a;color:var(--warn)}
+.btn.warn:hover{background:#fef3c7}
+.btn.sm{padding:5px 10px;font-size:11px}
+.btn.purple{background:var(--purple-bg);border-color:#ddd6fe;color:var(--purple)}
+.btn.purple:hover{background:#ede9fe}
+
+/* â”€â”€ SUMMARY BOXES â”€â”€ */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.box{background:#f8fafc;border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px}
+.box .k{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.box .v{font-size:20px;font-weight:700;font-family:'Space Grotesk',sans-serif;margin-top:5px;color:var(--ink)}
+
+/* â”€â”€ TABLE â”€â”€ */
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:var(--radius);background:#fff}
+.table{width:100%;border-collapse:collapse;min-width:500px}
+.table th{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);background:#f8fafc;padding:9px 12px;text-align:left;font-weight:700;border-bottom:1px solid var(--line);position:sticky;top:0}
+.table td{padding:9px 12px;border-bottom:1px solid #f3f4f6;font-size:13px;vertical-align:middle}
+.table tr:last-child td{border-bottom:none}
+.table tbody tr:hover{background:#f9fafb}
+.empty{padding:28px;text-align:center;color:var(--mut);font-size:13px}
+
+/* â”€â”€ BADGES â”€â”€ */
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:600}
+.b-ok{background:var(--ok-bg);color:#065f46}
+.b-warn{background:var(--warn-bg);color:#92400e}
+.b-bad{background:var(--danger-bg);color:#991b1b}
+.b-brand{background:var(--brand-light);color:#1e40af}
+.b-purple{background:var(--purple-bg);color:#5b21b6}
+.b-gray{background:#f3f4f6;color:#374151}
+
+/* â”€â”€ NOTIF â”€â”€ */
+.notif{display:none;margin-bottom:14px;padding:12px 16px;border-radius:var(--radius-sm);background:#ecfdf5;border:1px solid #6ee7b7;color:#065f46;font-weight:600;font-size:13px;animation:slideIn .2s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.notif.error-notif{background:var(--danger-bg);border-color:#fca5a5;color:#991b1b}
+
+/* â”€â”€ MODAL â”€â”€ */
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+.modal-box{background:#fff;border-radius:18px;padding:24px;width:min(100%,800px);max-height:88vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:popIn .2s ease}
+@keyframes popIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal-box h3{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;margin-bottom:4px}
+.modal-box .modal-sub{font-size:12px;color:var(--mut);margin-bottom:16px}
+.modal-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+
+/* â”€â”€ SAISIE RAPIDE â”€â”€ */
+.quick-entry{background:linear-gradient(135deg,#f0f7ff,#faf5ff);border:1px solid #bfdbfe;border-radius:var(--radius);padding:14px 16px;margin-bottom:14px}
+.quick-entry h4{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--brand);font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;align-items:end}
+.quick-grid .btn{width:100%;justify-content:center}
+
+/* â”€â”€ ANALYTICS â”€â”€ */
+.analytics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-bottom:16px}
+.analytics-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.analytics-card h4{font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.rank-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.rank-item:last-child{border-bottom:none}
+.rank-num{width:22px;height:22px;border-radius:6px;background:var(--brand-light);color:var(--brand);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rank-num.gold{background:#fef3c7;color:#d97706}
+.rank-num.silver{background:#f3f4f6;color:#6b7280}
+.rank-num.bronze{background:#fef3c7;color:#b45309;filter:brightness(.9)}
+.rank-info{flex:1;min-width:0}
+.rank-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-sub{font-size:11px;color:var(--mut)}
+.rank-val{font-size:14px;font-weight:700;color:var(--brand);font-family:'Space Grotesk',sans-serif;white-space:nowrap}
+.bar-wrap{margin-top:4px;background:#f3f4f6;border-radius:999px;height:4px;overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--brand),var(--purple));border-radius:999px;transition:.5s}
+
+/* â”€â”€ ROTATION â”€â”€ */
+.rotation-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.rot-fast{background:#dcfce7;color:#166534}
+.rot-medium{background:#fef3c7;color:#92400e}
+.rot-slow{background:#fee2e2;color:#991b1b}
+.rot-dead{background:#f3f4f6;color:#6b7280}
+
+/* â”€â”€ PERIOD FILTER â”€â”€ */
+.period-filter{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.period-filter label{font-size:12px;color:var(--mut);font-weight:600}
+.period-btn{background:#f3f4f6;border:1px solid var(--line);border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-weight:500;color:var(--mut);transition:.12s}
+.period-btn.active{background:var(--brand);border-color:var(--brand);color:#fff}
+
+/* â”€â”€ EDIT HIGHLIGHT â”€â”€ */
+.row-editing{background:#fffbeb !important;border-left:3px solid var(--warn)}
+
+/* â”€â”€ RESTORE STOCK â”€â”€ */
+.restore-zone{background:linear-gradient(135deg,#fff7ed,#fff);border:1px dashed #fdba74;border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:16px}
+.restore-zone h3{font-size:15px;font-weight:700;color:#9a3412;margin-bottom:6px}
+.restore-zone p{font-size:12px;color:var(--mut);margin-bottom:14px}
+
+/* â”€â”€ RESPONSIVE â”€â”€ */
+@media(max-width:960px){.module.active{grid-template-columns:1fr}.side{position:static}.topbar{flex-wrap:wrap;min-height:auto;padding:12px 16px;gap:12px}.topbar-right{border-left:none;padding-left:0;margin-left:0}}
+@media(max-width:700px){.form-grid{grid-template-columns:1fr 1fr}.kpi-row{grid-template-columns:1fr 1fr}.summary{grid-template-columns:1fr 1fr}.main-tabs{gap:0}.tab-btn{padding:0 12px;font-size:12px}.shell{padding:14px 12px}}
+@media(max-width:480px){.form-grid{grid-template-columns:1fr}.kpi-row{grid-template-columns:1fr 1fr}.summary{grid-template-columns:1fr}.table th,.table td{font-size:12px;padding:8px 10px}}
+
+/* â”€â”€ DIVIDER â”€â”€ */
+.section-divider{height:1px;background:var(--line);margin:16px 0}
+.section-title{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--mut);font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--line)}
+
+/* â”€â”€ INLINE EDIT â”€â”€ */
+.inline-edit-row td input,
+.inline-edit-row td select{padding:5px 8px;font-size:12px;border-radius:6px;width:100%;min-width:60px}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-icon">GS</div>
+    <div class="brand-text">
+      <h1>GestStock ERP</h1>
+      <p>Version 4.0</p>
+    </div>
+  </div>
+  <div class="main-tabs" id="main-tabs">
+    <button class="tab-btn active" data-main="database">Base donnees</button>
+    <button class="tab-btn" data-main="movements">Opérations</button>
+    <button class="tab-btn" data-main="inventory-import">Import Stock</button>
+    <button class="tab-btn" data-main="accounts">Comptes</button>
+    <button class="tab-btn" data-main="stock">Stock</button>
+    <button class="tab-btn" data-main="analytics">Analyses</button>
+  </div>
+  <div class="topbar-right">
+    <button class="icon-btn" id="toggle-dashboard">KPIs</button>
+    <button class="icon-btn" id="btn-reset-stock-modal">Remise a zero stock</button>
+    <button class="icon-btn danger-tab" id="reset-app">Reset</button>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="notif" id="notif"></div>
+
+  <!-- KPI DASHBOARD -->
+  <div id="dashboard-wrap" class="kpi-row" style="display:none">
+    <div class="kpi kpi-blue"><div class="k">Articles</div><div class="v" id="m-articles">0</div></div>
+    <div class="kpi"><div class="k">Sites</div><div class="v" id="m-sites">0</div></div>
+    <div class="kpi kpi-warn"><div class="k">Achats fournisseurs</div><div class="v" id="m-purchases">0 DH</div></div>
+    <div class="kpi kpi-ok"><div class="k">Ventes clients</div><div class="v" id="m-sales">0 DH</div></div>
+    <div class="kpi kpi-purple"><div class="k">Stock global</div><div class="v" id="m-stock">0</div></div>
+    <div class="kpi"><div class="k">Surface stock</div><div class="v" id="m-surface">0 m²</div></div>
+  </div>
+
+  <!-- MODULE: BASE DONNEES -->
+  <section class="module active" id="mod-database">
+    <aside class="side">
+      <div class="side-section">
+        <div class="side-label">Base de donnees</div>
+        <button class="sub-btn active" data-panel="db-articles">Articles</button>
+        <button class="sub-btn" data-panel="db-clients">Clients</button>
+        <button class="sub-btn" data-panel="db-suppliers">Fournisseurs</button>
+        <button class="sub-btn" data-panel="db-client-prices">Prix client</button>
+        <button class="sub-btn" data-panel="db-supplier-prices">Prix fournisseur</button>
+        <button class="sub-btn" data-panel="db-sites">Sites</button>
+      </div>
+    </aside>
+    <div>
+      <div class="card panel active" id="db-articles"></div>
+      <div class="card panel" id="db-clients"></div>
+      <div class="card panel" id="db-suppliers"></div>
+      <div class="card panel" id="db-client-prices"></div>
+      <div class="card panel" id="db-supplier-prices"></div>
+      <div class="card panel" id="db-sites"></div>
+    </div>
+  </section>
+
+  <!-- MODULE: MOUVEMENTS -->
+  <section class="module" id="mod-movements">
+    <aside class="side">
+      <div class="side-section">
+        <div class="side-label">Opérations</div>
+        <button class="sub-btn active" data-panel="mv-purchase">Achat fournisseur</button>
+        <button class="sub-btn" data-panel="mv-sale">Opération de vente</button>
+        <button class="sub-btn" data-panel="mv-transfer">Transfert intersite</button>
+        <button class="sub-btn" data-panel="mv-history">Historique</button>
+      </div>
+    </aside>
+    <div>
+      <div class="card panel active" id="mv-purchase"></div>
+      <div class="card panel" id="mv-sale"></div>
+      <div class="card panel" id="mv-transfer"></div>
+      <div class="card panel" id="mv-history"></div>
+    </div>
+  </section>
+
+  <!-- MODULE: IMPORT STOCK (Inventaire) - separe des achats -->
+  <section class="module" id="mod-inventory-import">
+    <aside class="side">
+      <div class="side-section">
+        <div class="side-label">Import / Inventaire</div>
+        <button class="sub-btn active" data-panel="inv-manual">Ajustement manuel</button>
+        <button class="sub-btn" data-panel="inv-excel">Import Excel</button>
+        <button class="sub-btn" data-panel="inv-history">Historique inventaire</button>
+      </div>
+    </aside>
+    <div>
+      <div class="card panel active" id="inv-manual"></div>
+      <div class="card panel" id="inv-excel"></div>
+      <div class="card panel" id="inv-history"></div>
+    </div>
+  </section>
+
+  <!-- MODULE: COMPTES -->
+  <section class="module" id="mod-accounts">
+    <aside class="side">
+      <div class="side-section">
+        <div class="side-label">Comptes</div>
+        <button class="sub-btn active" data-panel="acc-client">Comptes clients</button>
+        <button class="sub-btn" data-panel="acc-supplier">Comptes fournisseurs</button>
+      </div>
+    </aside>
+    <div>
+      <div class="card panel active" id="acc-client"></div>
+      <div class="card panel" id="acc-supplier"></div>
+    </div>
+  </section>
+
+  <!-- MODULE: STOCK -->
+  <section class="module" id="mod-stock">
+    <aside class="side">
+      <div class="side-section">
+        <div class="side-label">Stock</div>
+        <button class="sub-btn active" data-panel="stk-global">Vue globale</button>
+        <button class="sub-btn" data-panel="stk-sites">Par site</button>
+        <button class="sub-btn" data-panel="stk-ai">Reappro IA</button>
+      </div>
+    </aside>
+    <div>
+      <div class="card panel active" id="stk-global"></div>
+      <div class="card panel" id="stk-sites"></div>
+      <div class="card panel" id="stk-ai"></div>
+    </div>
+  </section>
+
+  <!-- MODULE: ANALYTICS -->
+  <section class="module" id="mod-analytics">
+    <aside class="side">
+      <div class="side-section">
+        <div class="side-label">Analyses</div>
+        <button class="sub-btn active" data-panel="ana-topsales">Top ventes</button>
+        <button class="sub-btn" data-panel="ana-rotation">Rotation stock</button>
+        <button class="sub-btn" data-panel="ana-vitesse">Vitesse rotation</button>
+        <button class="sub-btn" data-panel="ana-rapport">Rapport & Conseils</button>
+      </div>
+    </aside>
+    <div>
+      <div class="card panel active" id="ana-topsales"></div>
+      <div class="card panel" id="ana-rotation"></div>
+      <div class="card panel" id="ana-vitesse"></div>
+      <div class="card panel" id="ana-rapport"></div>
+    </div>
+  </section>
+</div>
+
+<!-- MODAL: CONFIRM -->
+<div id="confirm-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h3 id="confirm-modal-title">Confirmer</h3>
+    <p class="modal-sub" id="confirm-modal-desc"></p>
+    <div class="table-wrap" style="max-height:320px;overflow:auto">
+      <table class="table">
+        <thead id="confirm-modal-thead"></thead>
+        <tbody id="confirm-modal-tbody"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button class="btn primary" id="confirm-modal-ok">Confirmer et enregistrer</button>
+      <button class="btn" id="confirm-modal-cancel">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: RESTAURER STOCK -->
+<div id="restore-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box" style="max-width:540px">
+    <h3>Remise a zero du stock</h3>
+    <p class="modal-sub">Reinitialise le stock et l'historique des mouvements. La base de donnees (articles, clients, fournisseurs, sites, prix) reste intacte.</p>
+
+    <!-- CE QUI SERA EFFACE -->
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:8px">Ce qui sera remis a zero :</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px" id="reset-counts-clear">
+        <div style="font-size:12px;color:#b91c1c">Stock inventaire</div>
+        <div style="font-size:12px;color:#b91c1c">Achats (entrees)</div>
+        <div style="font-size:12px;color:#b91c1c">Ventes (sorties)</div>
+        <div style="font-size:12px;color:#b91c1c">Transferts entre sites</div>
+        <div style="font-size:12px;color:#b91c1c">Importations stock</div>
+        <div style="font-size:12px;color:#b91c1c">Tout l'historique mouvements</div>
+      </div>
+    </div>
+
+    <!-- CE QUI RESTE INTACT -->
+    <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;color:#065f46;margin-bottom:8px">Ce qui reste intact :</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div style="font-size:12px;color:#047857">Articles</div>
+        <div style="font-size:12px;color:#047857">Clients</div>
+        <div style="font-size:12px;color:#047857">Fournisseurs</div>
+        <div style="font-size:12px;color:#047857">Sites</div>
+        <div style="font-size:12px;color:#047857">Prix clients</div>
+        <div style="font-size:12px;color:#047857">Prix fournisseurs</div>
+        <div style="font-size:12px;color:#047857">Paiements</div>
+        <div style="font-size:12px;color:#047857">âš™ Tous les parametres</div>
+      </div>
+    </div>
+
+    <!-- COMPTEURS ACTUELS -->
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:8px">Donnees actuelles qui seront effacees :</div>
+      <div id="reset-current-counts" style="font-size:12px;color:#1e40af;line-height:2"></div>
+    </div>
+
+    <p style="font-size:12px;color:var(--mut);margin-bottom:14px">
+      💡 <strong>Conseil :</strong> Exportez une sauvegarde JSON avant de proceder.
+      <button class="btn sm" onclick="exportBackup()" style="margin-left:8px">Exporter sauvegarde</button>
+    </p>
+
+    <div class="modal-actions">
+      <button class="btn danger" onclick="applyResetStock()">Confirmer la remise a zero du stock</button>
+      <button class="btn" onclick="document.getElementById('restore-modal').style.display='none'">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ECHEANCE PAIEMENT -->
+<div id="due-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box" style="max-width:480px">
+    <h3>Echeance arrivee</h3>
+    <p class="modal-sub" id="due-modal-desc"></p>
+    <div style="background:#fff7ed;border:1px solid #fdba74;border-radius:10px;padding:14px;margin:12px 0">
+      <div id="due-modal-detail" style="font-size:13px;line-height:1.8;color:#374151"></div>
+    </div>
+    <p style="font-size:13px;font-weight:600;margin-bottom:10px">Ce paiement a-t-il été reçu/effectué ?</p>
+    <div class="modal-actions">
+      <button class="btn ok" id="due-modal-paid">Oui, c'est Paye</button>
+      <button class="btn danger" id="due-modal-unpaid">âŒ Non, Impaye</button>
+      <button class="btn" id="due-modal-later">⏳ Me rappeler plus tard</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: IMPUTATION EFFET -->
+<div id="effect-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box" style="max-width:520px">
+    <h3>Imputation d'un effet avec echeance</h3>
+    <p class="modal-sub">Vous avez saisi un montant avec mode LC ou Cheque et une echeance future.</p>
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px;margin:12px 0;font-size:13px;line-height:1.8;color:#1e40af" id="effect-modal-detail"></div>
+    <p style="font-size:14px;font-weight:700;margin:14px 0 8px">Que souhaitez-vous faire ?</p>
+    <div style="display:grid;gap:10px">
+      <button class="btn primary" id="effect-deduct-now" style="justify-content:flex-start;padding:12px 16px;text-align:left">
+        <div><strong>Deduire immediatement du solde</strong><br><span style="font-size:11px;font-weight:400;opacity:.8">Le montant est tranche maintenant du total dÃ». Pratique si vous avez deja le cheque/LC en main.</span></div>
+      </button>
+      <button class="btn warn" id="effect-wait-due" style="justify-content:flex-start;padding:12px 16px;text-align:left">
+        <div><strong>⏳ Attendre l'echeance pour valider</strong><br><span style="font-size:11px;font-weight:400;opacity:.8">Le paiement est enregistre mais marque "En cours". À l'echeance, l'application vous demandera s'il est Paye ou Impaye.</span></div>
+      </button>
+    </div>
+    <div class="modal-actions" style="margin-top:10px">
+      <button class="btn" id="effect-cancel">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDITION LIGNE -->
+<div id="edit-line-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h3 id="edit-line-title">Modifier la ligne</h3>
+    <p class="modal-sub" id="edit-line-sub"></p>
+    <div class="form-grid" id="edit-line-fields"></div>
+    <div class="modal-actions">
+      <button class="btn primary" id="edit-line-save">Enregistrer modification</button>
+      <button class="btn" onclick="document.getElementById('edit-line-modal').style.display='none'">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// â”€â”€â”€â”€â”€ UTILS â”€â”€â”€â”€â”€
+const $=id=>document.getElementById(id);
+const uid=p=>`${p}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+const today=()=>new Date().toISOString().slice(0,10);
+const num=v=>parseFloat(v)||0;
+const intv=v=>parseInt(v)||0;
+const norm=s=>(s||'').trim();
+const dh=v=>num(v).toLocaleString('fr-MA',{minimumFractionDigits:2,maximumFractionDigits:2})+' DH';
+const sqm=v=>num(v).toLocaleString('fr-MA',{minimumFractionDigits:2,maximumFractionDigits:2})+' m²';
+const surface=(l,w,q)=>num(l)*num(w)*intv(q)/10000;
+const keyOf=(a,c,l,w)=>`${norm(a)}|${norm(c)}|${num(l)}|${num(w)}`;
+
+// â”€â”€â”€â”€â”€ DB â”€â”€â”€â”€â”€
+const CKEYS=['articles','clients','suppliers','sites','purchases','sales','transfers','inventories','clientPrices','supplierPrices','payments','rolls','rollCuts'];
+let db={articles:[],clients:[],suppliers:[],sites:[],purchases:[],sales:[],transfers:[],inventories:[],clientPrices:[],supplierPrices:[],payments:[],rolls:[],rollCuts:[]};
+let sessionLines={purchase:[],sale:[],transfer:[],inventory:[]};
+let edit={article:-1,client:-1,supplier:-1,site:-1,cp:-1,sp:-1};
+let view={clientAccount:'',supplierAccount:''};
+let confirmCallback=null;
+let restoreData=null;
+
+function save(){try{CKEYS.forEach(k=>localStorage.setItem('gs3_'+k,JSON.stringify(db[k])))}catch(e){}}
+function load(){
+  CKEYS.forEach(k=>{try{const v=localStorage.getItem('gs3_'+k);if(v)db[k]=JSON.parse(v)}catch(e){}});
+  db.articles=(db.articles||[]).map(a=>({...a,type:a.type||'tapis'}));
+  db.rolls=db.rolls||[];
+  db.rollCuts=db.rollCuts||[];
+}
+
+// â”€â”€â”€â”€â”€ EXPORT / RESTORE â”€â”€â”€â”€â”€
+function exportBackup(){
+  const data={version:'3.0',date:today(),...Object.fromEntries(CKEYS.map(k=>[k,db[k]]))};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`geststock_backup_${today()}.json`;a.click();
+  notify('Sauvegarde exportee avec succes');
+}
+function openResetStockModal(){
+  // Populate current counts before showing
+  const counts=[
+    `📥 Achats : <strong>${db.purchases.length}</strong> enregistrement(s)`,
+    `📤 Ventes : <strong>${db.sales.length}</strong> enregistrement(s)`,
+    `🔀 Transferts : <strong>${db.transfers.length}</strong> enregistrement(s)`,
+    `📋 Inventaire importe : <strong>${db.inventories.length}</strong> enregistrement(s)`,
+  ];
+  $('reset-current-counts').innerHTML=counts.join('<br>');
+  $('restore-modal').style.display='flex';
+}
+// (restauration remplacee par remise a zero stock)
+function applyResetStock(){
+  if(!confirm('⚠ CONFIRMER la remise a zero du stock ?\n\nCeci va effacer :\n- Tous les achats (entrees stock)\n- Toutes les ventes (sorties stock)\n- Tous les transferts\n- Tout l\'inventaire importe\n\nLa base de donnees (articles, clients, fournisseurs, prix) reste intacte.\n\nCette action est irreversible.'))return;
+  // Effacer uniquement les mouvements et le stock, pas la base de donnees
+  db.purchases=[];
+  db.sales=[];
+  db.transfers=[];
+  db.inventories=[];
+  db.rolls=[];
+  db.rollCuts=[];
+  // NE PAS toucher : db.articles, db.clients, db.suppliers, db.sites, db.clientPrices, db.supplierPrices, db.payments
+  $('restore-modal').style.display='none';
+  save();
+  refresh();
+  notify('✅ Stock remis a zero - Base de donnees intacte (articles, clients, fournisseurs, prix conserves).');
+}
+
+// â”€â”€â”€â”€â”€ NOTIFY â”€â”€â”€â”€â”€
+let notifTimer=null;
+function notify(msg,isError=false){
+  const n=$('notif');
+  n.textContent=msg;
+  n.className='notif'+(isError?' error-notif':'');
+  n.style.display='block';
+  if(notifTimer)clearTimeout(notifTimer);
+  notifTimer=setTimeout(()=>n.style.display='none',3500);
+}
+
+// â”€â”€â”€â”€â”€ STOCK CALC â”€â”€â”€â”€â”€
+function stockQty(key,siteId){
+  let q=0;
+  db.purchases.forEach(x=>{if(x.key===key&&x.site===siteId)q+=num(x.qty)});
+  db.sales.forEach(x=>{if(!x.stockIgnore&&x.key===key&&x.site===siteId)q-=num(x.qty)});
+  db.transfers.forEach(x=>{if(x.key===key&&x.from===siteId)q-=num(x.qty);if(x.key===key&&x.to===siteId)q+=num(x.qty)});
+  db.inventories.forEach(x=>{if(x.key===key&&x.site===siteId)q+=num(x.adjust)});
+  return q;
+}
+function stockRows(){const map={};[...db.purchases,...db.sales.filter(x=>!x.stockIgnore),...db.transfers,...db.inventories].forEach(x=>{if(!x.key)return;map[x.key]={article:x.article,color:x.color,length:num(x.length),width:num(x.width),key:x.key}});return Object.values(map)}
+function globalQty(key){return db.sites.reduce((s,site)=>s+stockQty(key,site.id),0)}
+function stockValue(article,qty,l,w){const base=db.supplierPrices.find(p=>p.article===article)||db.clientPrices.find(p=>p.article===article);return base?surface(l,w,qty)*num(base.pm2):0}
+
+// â”€â”€â”€â”€â”€ ENTITY PRICE â”€â”€â”€â”€â”€
+function entityPrice(type,entity,article){
+  const arr=type==='client'?db.clientPrices:db.supplierPrices;
+  const key=type==='client'?'client':'supplier';
+  const row=arr.find(x=>x[key]===entity&&x.article===article);
+  if(row)return num(row.pm2);
+  if(type==='client'){const art=db.articles.find(x=>x.name===article);return num(art?.defaultPm2||0)}
+  return 0;
+}
+
+// â”€â”€â”€â”€â”€ ACCOUNT â”€â”€â”€â”€â”€
+function accountSummary(type,name){
+  const entity=(type==='client'?db.clients:db.suppliers).find(x=>x.name===name);
+  const init=num(entity?.initial||0);
+  const ops=(type==='client'?db.sales:db.purchases).filter(x=>(type==='client'?x.client:x.supplier)===name);
+  const totalOps=ops.reduce((s,x)=>s+num(x.total),0);
+  const payments=db.payments.filter(x=>x.type===type&&x.name===name);
+  // Only deduct payments that are deductNow=true, OR have no due date, OR due date has passed
+  const today_=new Date();today_.setHours(0,0,0,0);
+  const totalPay=payments.reduce((s,x)=>{
+    if(x.deductNow===false){
+      // wait-for-due mode: deduct only if due date has passed AND marked paid
+      if(x.paidStatus==='paid')return s+num(x.amount);
+      return s; // not yet deducted
+    }
+    // default: always deduct (deductNow=true or legacy payments without flag)
+    return s+num(x.amount);
+  },0);
+  return{entity,init,totalOps,totalPay,balance:init+totalOps-totalPay,ops,payments};
+}
+function dueState(d){if(!d)return{label:'-',cls:'b-brand'};const t=new Date(today()),x=new Date(d);t.setHours(0,0,0,0);x.setHours(0,0,0,0);const days=Math.round((x-t)/86400000);if(days<0)return{label:`Depassee (${Math.abs(days)}j)`,cls:'b-bad'};if(days===0)return{label:"Aujourd'hui",cls:'b-warn'};return{label:`${days}j`,cls:days<=7?'b-warn':'b-ok'}}
+function paymentStatus(p){
+  if(p.deductNow===false){
+    if(p.paidStatus==='paid')return'Paye ✅';
+    if(p.paidStatus==='unpaid')return'Impaye âŒ';
+    const s=dueState(p.due);
+    if(s.label.includes('Depassee'))return'Impaye âŒ';
+    if(s.label==="Aujourd'hui")return'DÃ» aujourd\'hui';
+    return'En attente echeance';
+  }
+  if(!p.due)return'Confirme';
+  const s=dueState(p.due);
+  return s.label.includes('Dépassée')?'Impayé':s.label==="Aujourd'hui"?'Dû':'En cours';
+}
+function siteName(id){return db.sites.find(s=>s.id===id)?.name||'-'}
+function opt(list,placeholder,key='name',label='name'){return`<option value="">${placeholder}</option>`+list.map(x=>`<option value="${x[key]}">${x[label]}</option>`).join('')}
+function articleByName(name){return db.articles.find(a=>a.name===name)}
+function articleType(name){return articleByName(name)?.type||'tapis'}
+function isMoquetteArticle(name){return articleType(name)==='moquette'}
+function pendingRollUsage(rollId){return sessionLines.sale.filter(x=>x.rollId===rollId).reduce((s,x)=>s+num(x.length),0)}
+function getRollById(id){return db.rolls.find(r=>r.id===id)}
+function getAvailableRolls(article,color,site){
+  return db.rolls
+    .filter(r=>r.article===article&&(!color||r.color===color)&&(!site||r.site===site)&&num(r.currentLength)>0)
+    .map(r=>({...r,availableLength:Math.max(0,num(r.currentLength)-pendingRollUsage(r.id))}))
+    .filter(r=>r.availableLength>0)
+    .sort((a,b)=>num(b.availableLength)-num(a.availableLength));
+}
+function rollLabel(roll){return `${roll.code||roll.id} â€¢ ${roll.availableLength||roll.currentLength} cm x ${roll.width} â€¢ ${siteName(roll.site)}`}
+function rollHistoryNote(r){return r.rollCode?`Rouleau ${r.rollCode}`:'Ã¢€â€'}
+
+// â”€â”€â”€â”€â”€ PERIOD HELPERS â”€â”€â”€â”€â”€
+function dateInPeriod(dateStr,periodDays){
+  if(!periodDays)return true;
+  const d=new Date(dateStr);const now=new Date();
+  return(now-d)/(86400000)<=periodDays;
+}
+
+// â”€â”€â”€â”€â”€ RENDER DATABASE â”€â”€â”€â”€â”€
+function renderMaster(panel,title,desc,fields,rows,extra=''){
+  $(panel).innerHTML=`
+    <div class="panel-head"><div><h2>${title}</h2><p>${desc}</p></div></div>
+    ${fields}
+    <div class="table-wrap"><table class="table">
+      <thead><tr>${rows.head.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.body.length?rows.body.join(''):`<tr><td class="empty" colspan="${rows.head.length}">Aucune donnée</td></tr>`}</tbody>
+    </table></div>
+    ${extra}`;
+}
+function renderDatabase(){
+  renderMaster('db-articles','Articles','Referentiel articles avec prix client par defaut.',
+    `<div class="form-grid"><div class="field"><label>Nom article</label><input id="f-article-name" placeholder="Ex: Marbre Blanc"></div><div class="field"><label>Prix defaut m²</label><input id="f-article-default" type="number" step="0.01" min="0" placeholder="0.00"></div></div><div class="toolbar"><button class="btn primary" onclick="saveArticle()">Enregistrer</button><button class="btn" onclick="clearForm('article')">Annuler</button></div>`,
+    {head:['#','Nom','Prix defaut','Action'],body:db.articles.map((a,i)=>`<tr class="${edit.article===i?'row-editing':''}"><td>${i+1}</td><td>${a.name}</td><td>${dh(a.defaultPm2||0)}</td><td style="white-space:nowrap"><button class="btn sm alt" onclick="editArticle(${i})">Modifier</button> <button class="btn sm danger" onclick="removeRow('articles',${i})">🗑</button></td></tr>`)});
+  if($('f-article-default')&&!$('f-article-type')){
+    const field=$('f-article-default').closest('.field');
+    if(field){
+      field.insertAdjacentHTML('beforebegin',`<div class="field"><label>Type</label><select id="f-article-type"><option value="tapis">Tapis</option><option value="moquette">Moquette</option></select></div>`);
+    }
+    const table=$('db-articles')?.querySelector('table');
+    table?.querySelector('thead tr')?.children[1]?.insertAdjacentHTML('afterend','<th>Type</th>');
+    table?.querySelectorAll('tbody tr').forEach((tr,i)=>{
+      if(tr.querySelector('.empty'))return;
+      const a=db.articles[i]||{};
+      tr.children[1]?.insertAdjacentHTML('afterend',`<td><span class="badge ${a.type==='moquette'?'b-purple':'b-brand'}">${a.type==='moquette'?'Moquette':'Tapis'}</span></td>`);
+    });
+  }
+  if(edit.article>=0){$('f-article-name').value=db.articles[edit.article].name;$('f-article-type').value=db.articles[edit.article].type||'tapis';$('f-article-default').value=num(db.articles[edit.article].defaultPm2||0)}
+
+  renderMaster('db-clients','Clients','Base clients avec ville et solde initial.',
+    `<div class="form-grid"><div class="field"><label>Nom</label><input id="f-client-name" placeholder="Nom client"></div><div class="field"><label>Ville</label><input id="f-client-city" placeholder="Ville"></div><div class="field"><label>Solde initial</label><input id="f-client-initial" type="number" step="0.01" placeholder="0.00"></div></div><div class="toolbar"><button class="btn primary" onclick="saveClient()">Enregistrer</button><button class="btn" onclick="clearForm('client')">Annuler</button></div>`,
+    {head:['#','Nom','Ville','Solde initial','Action'],body:db.clients.map((c,i)=>`<tr class="${edit.client===i?'row-editing':''}"><td>${i+1}</td><td>${c.name}</td><td>${c.city}</td><td>${dh(c.initial||0)}</td><td style="white-space:nowrap"><button class="btn sm alt" onclick="editClientRow(${i})">Modifier</button> <button class="btn sm danger" onclick="removeRow('clients',${i})">🗑</button></td></tr>`)});
+  if(edit.client>=0){const r=db.clients[edit.client];$('f-client-name').value=r.name;$('f-client-city').value=r.city;$('f-client-initial').value=r.initial||0}
+
+  renderMaster('db-suppliers','Fournisseurs','Base fournisseurs avec ville et solde initial.',
+    `<div class="form-grid"><div class="field"><label>Nom</label><input id="f-supplier-name" placeholder="Nom fournisseur"></div><div class="field"><label>Ville</label><input id="f-supplier-city" placeholder="Ville"></div><div class="field"><label>Solde initial</label><input id="f-supplier-initial" type="number" step="0.01" placeholder="0.00"></div></div><div class="toolbar"><button class="btn primary" onclick="saveSupplier()">Enregistrer</button><button class="btn" onclick="clearForm('supplier')">Annuler</button></div>`,
+    {head:['#','Nom','Ville','Solde initial','Action'],body:db.suppliers.map((c,i)=>`<tr class="${edit.supplier===i?'row-editing':''}"><td>${i+1}</td><td>${c.name}</td><td>${c.city}</td><td>${dh(c.initial||0)}</td><td style="white-space:nowrap"><button class="btn sm alt" onclick="editSupplierRow(${i})">Modifier</button> <button class="btn sm danger" onclick="removeRow('suppliers',${i})">🗑</button></td></tr>`)});
+  if(edit.supplier>=0){const r=db.suppliers[edit.supplier];$('f-supplier-name').value=r.name;$('f-supplier-city').value=r.city;$('f-supplier-initial').value=r.initial||0}
+
+  renderMaster('db-client-prices','Prix client','Prix m2 automatique pour les ventes.',
+    `<div class="form-grid"><div class="field"><label>Client</label><select id="f-cp-client">${opt(db.clients,'Choisir client')}</select></div><div class="field"><label>Article</label><select id="f-cp-article">${opt(db.articles,'Choisir article')}</select></div><div class="field"><label>Prix m2</label><input id="f-cp-pm2" type="number" step="0.01" min="0" placeholder="0.00"></div></div><div class="toolbar"><button class="btn primary" onclick="saveClientPrice()">Enregistrer</button><button class="btn" onclick="clearForm('cp')">Annuler</button></div>`,
+    {head:['#','Client','Article','Prix m2','Action'],body:db.clientPrices.map((r,i)=>`<tr class="${edit.cp===i?'row-editing':''}"><td>${i+1}</td><td>${r.client}</td><td>${r.article}</td><td>${dh(r.pm2)}</td><td style="white-space:nowrap"><button class="btn sm alt" onclick="editClientPrice(${i})">Modifier</button> <button class="btn sm danger" onclick="removeRow('clientPrices',${i})">🗑</button></td></tr>`)});
+  if(edit.cp>=0){const r=db.clientPrices[edit.cp];$('f-cp-client').value=r.client;$('f-cp-article').value=r.article;$('f-cp-pm2').value=r.pm2}
+
+  renderMaster('db-supplier-prices','Prix fournisseur','Prix m2 automatique pour les achats.',
+    `<div class="form-grid"><div class="field"><label>Fournisseur</label><select id="f-sp-supplier">${opt(db.suppliers,'Choisir fournisseur')}</select></div><div class="field"><label>Article</label><select id="f-sp-article">${opt(db.articles,'Choisir article')}</select></div><div class="field"><label>Prix m2</label><input id="f-sp-pm2" type="number" step="0.01" min="0" placeholder="0.00"></div></div><div class="toolbar"><button class="btn primary" onclick="saveSupplierPrice()">Enregistrer</button><button class="btn" onclick="clearForm('sp')">Annuler</button></div>`,
+    {head:['#','Fournisseur','Article','Prix m2','Action'],body:db.supplierPrices.map((r,i)=>`<tr class="${edit.sp===i?'row-editing':''}"><td>${i+1}</td><td>${r.supplier}</td><td>${r.article}</td><td>${dh(r.pm2)}</td><td style="white-space:nowrap"><button class="btn sm alt" onclick="editSupplierPrice(${i})">Modifier</button> <button class="btn sm danger" onclick="removeRow('supplierPrices',${i})">🗑</button></td></tr>`)});
+  if(edit.sp>=0){const r=db.supplierPrices[edit.sp];$('f-sp-supplier').value=r.supplier;$('f-sp-article').value=r.article;$('f-sp-pm2').value=r.pm2}
+
+  renderMaster('db-sites','Sites / Entrepots','Points de vente et entrepots separes.',
+    `<div class="form-grid"><div class="field"><label>Nom site</label><input id="f-site-name" placeholder="Ex: Magasin Central"></div><div class="field"><label>Ville</label><input id="f-site-city" placeholder="Ville"></div></div><div class="toolbar"><button class="btn primary" onclick="saveSite()">Enregistrer</button><button class="btn" onclick="clearForm('site')">Annuler</button></div>`,
+    {head:['#','Nom','Ville','Action'],body:db.sites.map((s,i)=>`<tr class="${edit.site===i?'row-editing':''}"><td>${i+1}</td><td>${s.name}</td><td>${s.city}</td><td style="white-space:nowrap"><button class="btn sm alt" onclick="editSiteRow(${i})">Modifier</button> <button class="btn sm danger" onclick="removeSite(${i})">🗑</button></td></tr>`)});
+  if(edit.site>=0){const s=db.sites[edit.site];$('f-site-name').value=s.name;$('f-site-city').value=s.city}
+}
+
+// â”€â”€â”€â”€â”€ RENDER MOVEMENTS â”€â”€â”€â”€â”€
+function renderMovements(){
+  // PURCHASE - achat fournisseur (pas inventaire)
+  $('mv-purchase').innerHTML=`
+    <div class="panel-head"><div><h2>â¬‡ Achat fournisseur</h2><p>Entrez les achats depuis vos fournisseurs. L'import Excel pour le stock est dans "Import Stock".</p></div></div>
+    <div class="quick-entry">
+      <h4>⚡ Saisie rapide</h4>
+      <div class="form-grid tight">
+        <div class="field"><label>Date</label><input id="p-date" type="date"></div>
+        <div class="field"><label>Fournisseur</label><select id="p-supplier">${opt(db.suppliers,'Fournisseur')}</select></div>
+        <div class="field"><label>Article</label><select id="p-article">${opt(db.articles,'Article')}</select></div>
+        <div class="field"><label>Site IN</label><select id="p-site">${opt(db.sites,'Site','id','name')}</select></div>
+        <div class="field"><label>Couleur</label><input id="p-color" placeholder="Couleur" list="p-color-list"><datalist id="p-color-list">${[...new Set(db.purchases.map(x=>x.color))].filter(Boolean).map(c=>`<option value="${c}">`).join('')}</datalist></div>
+        <div class="field"><label>Longueur (cm)</label><input id="p-length" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label>Largeur (cm)</label><input id="p-width" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label>Quantite</label><input id="p-qty" type="number" step="1" placeholder="0"></div>
+        <div class="field"><label>Prix m2</label><input id="p-pm2" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label>Remarque</label><input id="p-note" placeholder="Optionnel"></div>
+      </div>
+    </div>
+    <div class="summary">
+      <div class="box"><div class="k">Surface</div><div class="v" id="p-surface">0.00 m²</div></div>
+      <div class="box"><div class="k">Total</div><div class="v" id="p-total">0.00 DH</div></div>
+    </div>
+    <div class="toolbar">
+      <button class="btn primary" onclick="savePurchase()">➕ Ajouter ligne</button>
+      <button class="btn" onclick="clearFormMv('purchase')">Annuler</button>
+    </div>
+    ${renderSessionTable('purchase',['#','Date','Fournisseur','Article','Couleur','Long.','Larg.','Qte','Prix m2','Total',''],
+      sessionLines.purchase.map((r,i)=>`<tr>
+        <td>${i+1}</td><td>${r.date}</td><td>${r.supplier}</td><td>${r.article}</td>
+        <td>${r.color}</td><td>${r.length}</td><td>${r.width}</td><td>${r.qty}</td>
+        <td>${dh(r.pm2)}</td><td>${dh(r.total)}</td>
+        <td><button class="btn sm danger" onclick="removeSessionLine('purchase',${i})">âœ•</button>
+            <button class="btn sm alt" onclick="openEditLine('purchase',${i})">âœ</button></td>
+      </tr>`),'purchase')}`;
+
+  // SALE - vente client
+  $('mv-sale').innerHTML=`
+    <div class="panel-head"><div><h2>⬆ Opération de vente</h2><p>Enregistrez les ventes. Le stock est deduit automatiquement.</p></div></div>
+    <div class="quick-entry">
+      <h4>⚡ Saisie rapide</h4>
+      <div class="form-grid tight">
+        <div class="field"><label>Date</label><input id="s-date" type="date"></div>
+        <div class="field"><label>Client</label><select id="s-client">${opt(db.clients,'Client')}</select></div>
+        <div class="field" id="s-article-field"><label>Article</label><select id="s-article" onchange="onSaleArticleChange()">${opt(db.articles,'Article')}</select></div>
+        <div class="field" id="s-site-field"><label>Site OUT</label><select id="s-site">${opt(db.sites,'Site','id','name')}</select></div>
+        <div class="field" id="s-color-field"><label>Couleur</label><select id="s-color"><option value="">-- Selectionner couleur --</option></select></div>
+        <div class="field" id="s-dim-field"><label>Dimensions (L x l)</label><select id="s-dim"><option value="">-- Selectionner dim. --</option></select></div>
+        <div class="field"><label>Longueur (cm)</label><input id="s-length" type="number" step="0.01" placeholder="0.00" readonly style="background:#f0f4f9"></div>
+        <div class="field"><label>Largeur (cm)</label><input id="s-width" type="number" step="0.01" placeholder="0.00" readonly style="background:#f0f4f9"></div>
+        <div class="field"><label>Quantite</label><input id="s-qty" type="number" step="1" placeholder="0"></div>
+        <div class="field"><label>Prix m2</label><input id="s-pm2" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label>Remarque</label><input id="s-note" placeholder="Optionnel"></div>
+      </div>
+    </div>
+    <div class="summary">
+      <div class="box"><div class="k">Surface</div><div class="v" id="s-surface">0.00 m²</div></div>
+      <div class="box"><div class="k">Total</div><div class="v" id="s-total-box">0.00 DH</div></div>
+      <div class="box" id="s-stock-dispo-box"><div class="k">Stock dispo (site)</div><div class="v" id="s-stock-dispo" style="color:var(--ok)">-</div></div>
+    </div>
+    <div class="toolbar">
+      <button class="btn primary" onclick="saveSale()">➕ Ajouter ligne</button>
+      <button class="btn" onclick="clearFormMv('sale')">Annuler</button>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-left:8px;padding:8px 12px;background:#fff7ed;border:1px solid #fdba74;border-radius:8px;font-size:13px;font-weight:600;color:#9a3412">
+        <input type="checkbox" id="s-hors-stock" style="width:16px;height:16px;cursor:pointer;accent-color:#dc2626" onchange="onHorsStockChange()">
+        ⚠ Article hors stock (operation libre)
+      </label>
+    </div>
+    ${renderSessionTable('sale',['#','Date','Client','Article','Couleur','Long.','Larg.','Qte','Prix m2','Total','Statut',''],
+      sessionLines.sale.map((r,i)=>`<tr>
+        <td>${i+1}</td><td>${r.date}</td><td>${r.client}</td><td>${r.article}</td>
+        <td>${r.color}</td><td>${r.length}</td><td>${r.width}</td><td>${r.qty}</td>
+        <td>${dh(r.pm2)}</td><td>${dh(r.total)}</td>
+        <td>${r.horsStock?'<span class="badge b-warn">&#9888; Hors stock</span>':r.moquetteSale?'<span class="badge b-purple">Moquette</span>':'<span class="badge b-ok">Normal</span>'}</td>
+        <td><button class="btn sm danger" onclick="removeSessionLine('sale',${i})">&#x2715;</button>
+            <button class="btn sm alt" onclick="openEditLine('sale',${i})">&#x270f;</button></td>
+      </tr>`),'sale')}`;
+  // TRANSFER
+  $('mv-transfer').innerHTML=`
+    <div class="panel-head"><div><h2>â†” Transfert intersite</h2><p>Deplacez du stock entre sites.</p></div></div>
+    <div class="form-grid">
+      <div class="field"><label>Date</label><input id="t-date" type="date"></div>
+      <div class="field"><label>Article</label><select id="t-article">${opt(db.articles,'Choisir article')}</select></div>
+      <div class="field"><label>Site OUT</label><select id="t-from">${opt(db.sites,'Choisir site','id','name')}</select></div>
+      <div class="field"><label>Site IN</label><select id="t-to">${opt(db.sites,'Choisir site','id','name')}</select></div>
+      <div class="field"><label>Couleur</label><input id="t-color" placeholder="Couleur"></div>
+      <div class="field"><label>Longueur</label><input id="t-length" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="field"><label>Largeur</label><input id="t-width" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="field"><label>Quantite</label><input id="t-qty" type="number" step="1" placeholder="0"></div>
+      <div class="field full-col"><label>Remarque</label><input id="t-note" placeholder="Optionnel"></div>
+    </div>
+    <div class="summary"><div class="box"><div class="k">Surface</div><div class="v" id="t-surface">0.00 m²</div></div></div>
+    <div class="toolbar">
+      <button class="btn primary" onclick="saveTransfer()">➕ Ajouter transfert</button>
+      <button class="btn" onclick="clearFormMv('transfer')">Annuler</button>
+    </div>
+    ${renderSessionTable('transfer',['#','Date','Article','Couleur','Long.','Larg.','Qte','Site OUT','Site IN',''],
+      sessionLines.transfer.map((r,i)=>`<tr>
+        <td>${i+1}</td><td>${r.date}</td><td>${r.article}</td>
+        <td>${r.color}</td><td>${r.length}</td><td>${r.width}</td><td>${r.qty}</td>
+        <td>${siteName(r.from)}</td><td>${siteName(r.to)}</td>
+        <td><button class="btn sm danger" onclick="removeSessionLine('transfer',${i})">âœ•</button></td>
+      </tr>`),'transfer')}`;
+
+  // HISTORY
+  const hist=[
+    ...db.purchases.map(x=>({date:x.date,type:'Achat',article:x.article,color:x.color,length:x.length,width:x.width,site:siteName(x.site),partner:x.supplier,qty:x.qty,total:x.total,note:x.note||'-'})),
+    ...db.sales.map(x=>({date:x.date,type:'Vente',article:x.article,color:x.color,length:x.length,width:x.width,site:siteName(x.site),partner:x.client,qty:x.qty,total:x.total,note:x.note||'-'})),
+    ...db.transfers.map(x=>({date:x.date,type:'Transfert',article:x.article,color:x.color,length:x.length,width:x.width,site:`${siteName(x.from)} â†’ ${siteName(x.to)}`,partner:'-',qty:x.qty,total:0,note:x.note||'-'})),
+  ].sort((a,b)=>b.date.localeCompare(a.date));
+
+  $('mv-history').innerHTML=`
+    <div class="panel-head"><div><h2>Historique mouvements</h2><p>Tous les achats, ventes et transferts.</p></div></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>#</th><th>Date</th><th>Type</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Site</th><th>Partenaire</th><th>Qte</th><th>Total</th><th>Note</th></tr></thead>
+      <tbody>${hist.length?hist.map((r,i)=>`<tr><td>${i+1}</td><td>${r.date}</td>
+        <td><span class="badge ${r.type==='Achat'?'b-brand':r.type==='Vente'?'b-ok':'b-purple'}">${r.type}</span></td>
+        <td>${r.article}</td><td>${r.color||'-'}</td><td>${r.length&&r.width?r.length+' x '+r.width:'-'}</td>
+        <td>${r.site}</td><td>${r.partner}</td><td>${r.qty}</td><td>${r.total?dh(r.total):'-'}</td><td>${r.note}</td></tr>`).join(''):`<tr><td class="empty" colspan="11">Aucun mouvement</td></tr>`}</tbody>
+    </table></div>`;
+
+  ensureMoquetteMovementFields();
+  bindMovementCalculators();
+}
+
+function renderSessionTable(type,heads,rows,label){
+  const count=sessionLines[type].length;
+  return `<div class="section-divider"></div>
+    <div class="section-title">Lignes en attente (${count})</div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+      ${count?`<button class="btn ok" onclick="confirmSession('${type}')">Confirmer ${count} ${label}(s)</button>`:''}
+    </div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr>${heads.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${rows.length?rows.join(''):`<tr><td class="empty" colspan="${heads.length}">Aucune ligne en attente</td></tr>`}</tbody>
+    </table></div>`;
+
+  const currentRolls=db.rolls.filter(r=>num(r.currentLength)>0).sort((a,b)=>a.article.localeCompare(b.article)||num(b.currentLength)-num(a.currentLength));
+  $('stk-global')?.insertAdjacentHTML('beforeend',`
+    <div class="section-divider"></div>
+    <div class="panel-head"><div><h2>Rouleaux moquette - stock actuel</h2><p>Vue dÃƒÂ©taillÃƒÂ©e des rouleaux entiers et dÃƒÂ©jÃƒÂ  coupÃƒÂ©s.</p></div></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>#</th><th>Rouleau</th><th>Article</th><th>Couleur</th><th>Site</th><th>Longueur restante</th><th>Largeur</th><th>Statut</th></tr></thead>
+      <tbody>${currentRolls.length?currentRolls.map((r,i)=>`<tr><td>${i+1}</td><td>${r.code||r.id}</td><td>${r.article}</td><td>${r.color||'Ã¢€â€'}</td><td>${siteName(r.site)}</td><td><strong>${r.currentLength} cm</strong></td><td>${r.width} cm</td><td><span class="badge ${r.status==='full'?'b-ok':'b-purple'}">${r.status==='full'?'Entier':'Coupe'}</span></td></tr>`).join(''):`<tr><td class="empty" colspan="8">Aucun rouleau moquette en stock</td></tr>`}</tbody>
+    </table></div>
+    <div class="section-divider"></div>
+    <div class="panel-head"><div><h2>Historique des coupes</h2><p>Historique par rouleau des morceaux vendus et des restes generes.</p></div></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>#</th><th>Date</th><th>Rouleau</th><th>Article</th><th>Client</th><th>Site</th><th>Coupe vendue</th><th>Reste</th><th>Total</th><th>Remarque</th></tr></thead>
+      <tbody>${db.rollCuts.length?db.rollCuts.slice().sort((a,b)=>b.date.localeCompare(a.date)).map((r,i)=>`<tr><td>${i+1}</td><td>${r.date}</td><td>${r.rollCode||r.rollId}</td><td>${r.article}</td><td>${r.client}</td><td>${siteName(r.site)}</td><td>${r.soldLength} Ãƒ- ${r.width} cm</td><td>${r.remainingLength} Ãƒ- ${r.width} cm</td><td>${dh(r.total)}</td><td>${r.note||'Ã¢€â€'}</td></tr>`).join(''):`<tr><td class="empty" colspan="10">Aucune coupe enregistree</td></tr>`}</tbody>
+    </table></div>`);
+}
+
+// â”€â”€â”€â”€â”€ RENDER INVENTORY IMPORT (separe des achats) â”€â”€â”€â”€â”€
+function renderInventoryImport(){
+  // Manuel
+  $('inv-manual').innerHTML=`
+    <div class="panel-head"><div><h2>Ajustement manuel</h2><p>Corrigez manuellement les ecarts de stock. N'affecte pas les achats fournisseurs.</p></div></div>
+    <div class="form-grid">
+      <div class="field"><label>Date</label><input id="i-date" type="date"></div>
+      <div class="field"><label>Article</label><select id="i-article">${opt(db.articles,'Choisir article')}</select></div>
+      <div class="field"><label>Site</label><select id="i-site">${opt(db.sites,'Choisir site','id','name')}</select></div>
+      <div class="field"><label>Couleur</label><input id="i-color" placeholder="Couleur"></div>
+      <div class="field"><label>Longueur</label><input id="i-length" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="field"><label>Largeur</label><input id="i-width" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="field"><label>Ajustement (+/-)</label><input id="i-adjust" type="number" step="1" placeholder="Ex: -5 ou +10"></div>
+      <div class="field full-col"><label>Motif</label><input id="i-note" placeholder="Raison de l'ajustement"></div>
+    </div>
+    <div class="summary"><div class="box"><div class="k">Surface ajustee</div><div class="v" id="i-surface">0.00 m²</div></div></div>
+    <div class="toolbar">
+      <button class="btn primary" onclick="saveInventory()">➕ Ajouter ajustement</button>
+      <button class="btn" onclick="clearFormInv()">Annuler</button>
+    </div>
+    ${renderSessionTable('inventory',['#','Date','Article','Site','Couleur','Long.','Larg.','Ajust.','Motif',''],
+      sessionLines.inventory.map((r,i)=>`<tr>
+        <td>${i+1}</td><td>${r.date}</td><td>${r.article}</td><td>${siteName(r.site)}</td>
+        <td>${r.color}</td><td>${r.length}</td><td>${r.width}</td>
+        <td><span class="badge ${r.adjust>0?'b-ok':'b-bad'}">${r.adjust>0?'+'+r.adjust:r.adjust}</span></td>
+        <td>${r.note||'-'}</td>
+        <td><button class="btn sm danger" onclick="removeSessionLine('inventory',${i})">âœ•</button></td>
+      </tr>`),'inventory')}`;
+
+  // Import Excel â†’ Inventaire
+  $('inv-excel').innerHTML=`
+    <div class="panel-head"><div><h2>Import Excel â†’ Stock</h2><p>Importez un fichier Excel pour ajouter du stock via inventaire. <strong>Ne compte pas comme achat fournisseur</strong> - aucune ecriture comptable n'est generee.</p></div></div>
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--radius);padding:18px;margin-bottom:16px">
+      <p style="font-size:13px;margin-bottom:10px"><strong>Format attendu du fichier Excel :</strong></p>
+      <p style="font-size:12px;color:var(--mut);line-height:1.8">Colonne A : Nom article<br>Colonne B : Couleur<br>Colonne C : Longueur<br>Colonne D : Largeur<br>Colonne E : Quantite</p>
+      <p style="font-size:12px;color:var(--warn);margin-top:8px">⚠ La ligne 1 est ignoree (en-tetes). Les donnees commencent a la ligne 2.</p>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Date d'import</label><input id="xi-date" type="date" value="${today()}"></div>
+      <div class="field"><label>Site destination</label><select id="xi-site">${opt(db.sites,'Choisir site','id','name')}</select></div>
+      <div class="field full-col"><label>Motif</label><input id="xi-note" placeholder="Ex: Stock initial, Inventaire physique..." value="Import Excel inventaire"></div>
+    </div>
+    <div class="toolbar">
+      <button class="btn primary" onclick="importExcelInventaire()">Choisir fichier Excel</button>
+      <input type="file" id="excel-inv-input" accept=".xlsx" style="display:none">
+    </div>
+    <div id="inv-excel-preview" style="display:none;margin-top:14px">
+      <div class="section-title">AperÃ§u des lignes importees</div>
+      <div class="table-wrap">
+        <table class="table"><thead><tr><th>#</th><th>Article</th><th>Couleur</th><th>Long.</th><th>Larg.</th><th>Qte</th><th>Statut</th></tr></thead>
+        <tbody id="inv-excel-preview-body"></tbody>
+      </table>
+      <div class="toolbar" style="margin-top:12px">
+        <button class="btn ok" onclick="confirmExcelInventaire()">Confirmer import inventaire</button>
+        <button class="btn danger" onclick="cancelExcelInventaire()">Annuler</button>
+      </div>
+    </div>`;
+
+  // Historique inventaire
+  const invHist=[...db.inventories].sort((a,b)=>b.date.localeCompare(a.date));
+  $('inv-history').innerHTML=`
+    <div class="panel-head"><div><h2>Historique inventaires</h2><p>Tous les ajustements de stock (manuels + imports Excel).</p></div></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>#</th><th>Date</th><th>Article</th><th>Site</th><th>Couleur</th><th>Long.</th><th>Larg.</th><th>Ajustement</th><th>Motif</th></tr></thead>
+      <tbody>${invHist.length?invHist.map((r,i)=>`<tr>
+        <td>${i+1}</td><td>${r.date}</td><td>${r.article}</td><td>${siteName(r.site)}</td>
+        <td>${r.color||'-'}</td><td>${r.length||0}</td><td>${r.width||0}</td>
+        <td><span class="badge ${r.adjust>0?'b-ok':'b-bad'}">${r.adjust>0?'+'+r.adjust:r.adjust}</span></td>
+        <td>${r.note||'-'}</td>
+      </tr>`).join(''):`<tr><td class="empty" colspan="9">Aucun inventaire</td></tr>`}</tbody>
+    </table></div>`;
+
+  bindInvCalculators();
+}
+
+// â”€â”€â”€â”€â”€ EXCEL INVENTAIRE (pas achat) â”€â”€â”€â”€â”€
+let pendingExcelInventaire=[];
+function importExcelInventaire(){
+  const input=$('excel-inv-input');
+  const site=$('xi-site').value;
+  const date=$('xi-date').value||today();
+  if(!site){alert('Veuillez choisir un site destination.');return;}
+  const doImport=function(){
+    input.onchange=async function(e){
+      const file=e.target.files[0];if(!file)return;
+      try{
+        const buf=await file.arrayBuffer();
+        const bytes=new Uint8Array(buf);
+        const wb=XLSX.read(bytes,{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        pendingExcelInventaire=[];const errors=[];
+        for(let i=1;i<rows.length;i++){
+          const row=rows[i];
+          const article=String(row[0]||'').trim();
+          const color=String(row[1]||'').trim();
+          const length=num(row[2]);const width=num(row[3]);const qty=intv(row[4]);
+          if(!article||!color||!length||!width||qty<=0){errors.push(i+1);continue;}
+if(!db.articles.find(a=>a.name===article))db.articles.push({id:uid('art'),name:article,type:'tapis',defaultPm2:0});
+          const key=keyOf(article,color,length,width);
+          pendingExcelInventaire.push({article,color,length,width,qty,site,date,note:$('xi-note').value||'Import Excel',key,adjust:qty,status:'OK'});
+        }
+        const body=$('inv-excel-preview-body');
+        body.innerHTML=pendingExcelInventaire.map((r,i)=>`<tr><td>${i+1}</td><td>${r.article}</td><td>${r.color}</td><td>${r.length}</td><td>${r.width}</td><td>${r.qty}</td><td><span class="badge b-ok">Pret</span></td></tr>`).join('');
+        if(errors.length)body.innerHTML+=`<tr><td colspan="7" class="empty">⚠ ${errors.length} ligne(s) ignoree(s) (lignes: ${errors.join(', ')})</td></tr>`;
+        $('inv-excel-preview').style.display='block';
+        notify(`${pendingExcelInventaire.length} ligne(s) lues. Verifiez et confirmez.`);
+      }catch(err){alert('Erreur lecture Excel: '+err.message);}
+      input.value='';
+    };
+    input.click();
+  };
+  if(typeof XLSX!=='undefined'){doImport();}
+  else{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=()=>doImport();s.onerror=()=>alert('Impossible de charger la bibliotheque Excel.');document.head.appendChild(s);}
+}
+function confirmExcelInventaire(){
+  if(!pendingExcelInventaire.length)return;
+  pendingExcelInventaire.forEach(r=>db.inventories.push({id:uid('inv'),...r}));
+  notify(`${pendingExcelInventaire.length} ligne(s) ajoutees a l'inventaire (stock mis a jour, pas en achat).`);
+  pendingExcelInventaire=[];
+  $('inv-excel-preview').style.display='none';
+  save();refresh();
+}
+function cancelExcelInventaire(){
+  pendingExcelInventaire=[];
+  $('inv-excel-preview').style.display='none';
+}
+
+// â”€â”€â”€â”€â”€ RENDER ACCOUNTS â”€â”€â”€â”€â”€
+function renderAccounts(){
+  $('acc-client').innerHTML=renderAccountPanel('client','👤 Compte client');
+  $('acc-supplier').innerHTML=renderAccountPanel('supplier','ðŸ­ Compte fournisseur');
+  bindAccountTools();
+}
+function renderAccountPanel(type,title){
+  const list=type==='client'?db.clients:db.suppliers;
+  const selected=view[type+'Account']&&list.some(x=>x.name===view[type+'Account'])?view[type+'Account']:(list[0]?.name||'');
+  view[type+'Account']=selected;
+  const sum=accountSummary(type,selected);
+  const payRows=sum.payments.map((p,i)=>{const due=dueState(p.due);return`<tr><td>${i+1}</td><td>${p.date}</td><td>${dh(p.amount)}</td><td>${p.mode}</td><td>${p.due||'-'}</td><td><span class="badge ${due.cls}">${due.label}</span></td><td><span class="badge ${paymentStatus(p)==='Impaye'?'b-bad':paymentStatus(p)==='DÃ»'?'b-warn':'b-ok'}">${paymentStatus(p)}</span></td><td>${p.note||'-'}</td></tr>`}).join('');
+  const opRows=sum.ops.map((x,i)=>`<tr><td>${i+1}</td><td>${x.date}</td><td>${x.article}</td><td>${x.color||'-'}</td><td>${x.length||0} x ${x.width||0}</td><td>${siteName(x.site)}</td><td>${x.qty}</td><td>${sqm(surface(x.length,x.width,x.qty))}</td><td>${dh(x.pm2)}</td><td>${dh(x.total)}</td></tr>`).join('');
+  const selectHtml=`<option value="">Sélectionner</option>`+list.map(x=>`<option value="${x.name}" ${x.name===selected?'selected':''}>${x.name}</option>`).join('');
+  return `<div class="panel-head"><div><h2>${title}</h2><p>Solde = initial + operations âˆ’ paiements.</p></div></div>
+    <div class="form-grid">
+      <div class="field"><label>${type==='client'?'Client':'Fournisseur'}</label><select id="${type}-account-select" onchange="setAccountView('${type}',this.value)">${selectHtml}</select></div>
+      <div class="field"><label>Date paiement</label><input id="${type}-pay-date" type="date"></div>
+      <div class="field"><label>Montant</label><input id="${type}-pay-amount" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="field"><label>Mode</label><select id="${type}-pay-mode"><option>Cash</option><option>Virement</option><option>LC</option><option>Cheque</option></select></div>
+      <div class="field"><label>Delai jours</label><input id="${type}-pay-days" type="number" value="0"></div>
+      <div class="field"><label>Echeance</label><input id="${type}-pay-due" type="date"></div>
+      <div class="field"><label>Remarque</label><input id="${type}-pay-note" placeholder="Optionnel"></div>
+    </div>
+    <div class="toolbar">
+      <button class="btn primary" onclick="saveAccountPayment('${type}')">Ajouter paiement</button>
+      <button class="btn alt" onclick="togglePrintOptions('${type}')">🖨 Impression</button>
+    </div>
+    <div id="${type}-print-options" style="display:none;background:linear-gradient(135deg,#f0f7ff,#faf5ff);border:1px solid #bfdbfe;border-radius:var(--radius);padding:14px 16px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:6px">🖨 Options d'impression</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;align-items:end;margin-bottom:10px">
+        <div class="field"><label>Date début</label><input id="${type}-print-from" type="date" placeholder="Depuis"></div>
+        <div class="field"><label>Date fin</label><input id="${type}-print-to" type="date" placeholder="Jusqu'à" value="${new Date().toISOString().slice(0,10)}"></div>
+        <div class="field" style="justify-content:flex-end">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:18px">
+            <input type="checkbox" id="${type}-print-hide-pm2" style="width:15px;height:15px;cursor:pointer;accent-color:var(--brand)">
+            <span style="font-size:12px;font-weight:600;color:var(--ink)">Masquer prix m²</span>
+          </label>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn primary" onclick="printAccount('${type}')">Imprimer</button>
+        <button class="btn" onclick="document.getElementById('${type}-print-options').style.display='none'">Annuler</button>
+      </div>
+    </div>
+    <div class="summary">
+      <div class="box"><div class="k">Solde initial</div><div class="v">${dh(sum.init)}</div></div>
+      <div class="box"><div class="k">Total operations</div><div class="v">${dh(sum.totalOps)}</div></div>
+      <div class="box"><div class="k">Total paiements</div><div class="v">${dh(sum.totalPay)}</div></div>
+      <div class="box ${num(sum.balance)>0?'':''}"><div class="k">Solde restant</div><div class="v" style="color:${num(sum.balance)>0?'var(--ok)':'var(--danger)'}">${dh(sum.balance)}</div></div>
+    </div>
+    <div class="section-title">Operations</div>
+    <div class="table-wrap" style="margin-bottom:14px"><table class="table"><thead><tr><th>#</th><th>Date</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Site</th><th>Qte</th><th>Surface</th><th>Prix m2</th><th>Total</th></tr></thead><tbody>${opRows||`<tr><td class="empty" colspan="10">Aucune operation</td></tr>`}</tbody></table></div>
+    <div class="section-title">Paiements</div>
+    <div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Date</th><th>Montant</th><th>Mode</th><th>Echeance</th><th>Jours restants</th><th>Statut</th><th>Remarque</th></tr></thead><tbody>${payRows||`<tr><td class="empty" colspan="8">Aucun paiement</td></tr>`}</tbody></table></div>`;
+}
+
+// â”€â”€â”€â”€â”€ RENDER STOCK â”€â”€â”€â”€â”€
+function renderStock(){
+  const rows=stockRows().map(r=>({...r,qty:globalQty(r.key),value:stockValue(r.article,globalQty(r.key),r.length,r.width)})).filter(r=>r.qty!==0);
+
+  const totalSurface=rows.reduce((s,r)=>s+surface(r.length,r.width,r.qty),0);
+  const totalValue=rows.reduce((s,r)=>s+r.value,0);
+
+  $('stk-global').innerHTML=`
+    <div class="panel-head"><div><h2>Vue globale du stock</h2><p>Stock total toutes références.</p></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #bfdbfe;border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#1e40af;font-weight:700">Total superficie en stock</div>
+        <div style="font-size:24px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:#1a56db;margin-top:4px">${sqm(totalSurface)}</div>
+      </div>
+      <div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1px solid #a7f3d0;border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#065f46;font-weight:700">Valeur totale du stock</div>
+        <div style="font-size:24px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:#059669;margin-top:4px">${dh(totalValue)}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;align-items:flex-end">
+      <div class="field" style="flex:2">
+        <label>Recherche</label>
+        <input id="stk-search" placeholder="Rechercher par article, couleur, dimensions..." oninput="filterStock()" style="width:100%">
+      </div>
+      <div class="field" style="flex:1">
+        <label>Filtrer par site</label>
+        <select id="stk-global-site" onchange="filterStock()">
+          <option value="">Tous les sites</option>
+          ${db.sites.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="table-wrap"><table class="table" id="stk-global-table">
+      <thead><tr><th>#</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Qte</th><th>Surface</th><th>Valeur</th><th>Suggestion</th></tr></thead>
+      <tbody id="stk-global-body">${rows.length?rows.map((r,i)=>{
+        const recentSales=db.sales.filter(s=>s.article===r.article).reduce((s,x)=>s+num(x.qty),0);
+        const suggest=r.qty<Math.max(2,recentSales)?'Réappro conseillé':'Stock stable';
+        // Compute site ids that have this item
+        const siteIds=db.sites.map(s=>s.id).filter(sid=>stockQty(r.key,sid)>0).join(',');
+        return`<tr data-search="${[r.article,r.color,r.length,r.width].join(' ').toLowerCase()}" data-sites="${siteIds}">
+          <td>${i+1}</td><td>${r.article}</td><td>${r.color}</td>
+          <td>${r.length} x ${r.width}</td><td><strong>${r.qty}</strong></td>
+          <td>${sqm(surface(r.length,r.width,r.qty))}</td><td>${dh(r.value)}</td>
+          <td><span class="badge ${suggest==='Réappro conseillé'?'b-warn':'b-ok'}">${suggest}</span></td>
+        </tr>`;}).join(''):`<tr><td class="empty" colspan="8">Aucun stock disponible</td></tr>`}</tbody>
+    </table></div>`;
+
+  window.filterStock=function(){
+    const q=($('stk-search')?.value||'').toLowerCase().trim();
+    const siteF=$('stk-global-site')?.value||'';
+    document.querySelectorAll('#stk-global-body tr[data-search]').forEach(tr=>{
+      const matchQ=q===''||tr.dataset.search.includes(q);
+      const matchS=siteF===''||(tr.dataset.sites||'').split(',').includes(siteF);
+      tr.style.display=matchQ&&matchS?'':'none';
+    });
+  };
+
+  const siteFilter=($('stk-site-filter')?.value)||'';
+  const siteRows=db.sites.map(site=>stockRows().map(r=>({...r,siteObj:site,site:site.name,qty:stockQty(r.key,site.id),value:stockValue(r.article,stockQty(r.key,site.id),r.length,r.width)})).filter(r=>r.qty!==0)).flat();
+
+  $('stk-sites').innerHTML=`
+    <div class="panel-head"><div><h2>Stock par site</h2><p>Filtrez par site pour voir les quantites locales.</p></div></div>
+    <div class="form-grid tight" style="margin-bottom:14px">
+      <div class="field"><label>Site</label><select id="stk-site-filter" onchange="renderStock()"><option value="">Tous les sites</option>${db.sites.map(s=>`<option value="${s.id}" ${s.id===siteFilter?'selected':''}>${s.name}</option>`).join('')}</select></div>
+    </div>
+    <div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Site</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Qte</th><th>Surface</th><th>Valeur</th></tr></thead>
+      <tbody>${siteRows.filter(r=>!siteFilter||r.siteObj?.id===siteFilter).length?
+        siteRows.filter(r=>!siteFilter||r.siteObj?.id===siteFilter).map((r,i)=>`<tr>
+          <td>${i+1}</td><td>${r.site}</td><td>${r.article}</td><td>${r.color}</td>
+          <td>${r.length} x ${r.width}</td><td><strong>${r.qty}</strong></td>
+          <td>${sqm(surface(r.length,r.width,r.qty))}</td><td>${dh(r.value)}</td>
+        </tr>`).join(''):`<tr><td class="empty" colspan="8">Aucun stock</td></tr>`}
+      </tbody>
+    </table></div>`;
+
+  const aiRows=rows.filter(r=>r.qty>0||db.sales.some(s=>s.article===r.article)).map(r=>{
+    const sold=db.sales.filter(s=>s.article===r.article).reduce((s,x)=>s+num(x.qty),0);
+    const bought=db.purchases.filter(p=>p.article===r.article).reduce((s,x)=>s+num(x.qty),0);
+    const imported=db.inventories.filter(iv=>iv.article===r.article&&iv.adjust>0).reduce((s,x)=>s+num(x.adjust),0);
+    const score=sold>0?((sold+1)/(Math.max(1,r.qty))).toFixed(2):'0.00';
+    const suggestion=sold===0?'Pas assez d\'historique':r.qty<sold?'Commander rapidement':r.qty<sold*2?'Prévoir réappro':'RAS';
+    return{article:r.article,color:r.color,length:r.length,width:r.width,stock:r.qty,sold,bought,imported,score,suggestion};
+  }).sort((a,b)=>parseFloat(b.score)-parseFloat(a.score));
+
+  $('stk-ai').innerHTML=`
+    <div class="panel-head"><div><h2>Suggestions reapprovisionnement</h2><p>Base sur les ventes cumulees vs stock actuel. Les imports Excel inventaire sont exclus des "achats".</p></div></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>#</th><th>Article</th><th>Couleur</th><th>Dim.</th><th>Stock</th><th>Ventes</th><th>Achats</th><th>Import inv.</th><th>Score</th><th>Suggestion</th></tr></thead>
+      <tbody>${aiRows.length?aiRows.map((r,i)=>`<tr>
+        <td>${i+1}</td><td>${r.article}</td><td>${r.color||'-'}</td>
+        <td>${r.length||0} x ${r.width||0}</td><td><strong>${r.stock}</strong></td>
+        <td>${r.sold}</td><td>${r.bought}</td><td>${r.imported}</td><td>${r.score}</td>
+        <td><span class="badge ${r.suggestion==='Commander rapidement'?'b-bad':r.suggestion==='Prévoir réappro'?'b-warn':r.suggestion==='RAS'?'b-ok':'b-gray'}">${r.suggestion}</span></td>
+      </tr>`).join(''):`<tr><td class="empty" colspan="10">Pas assez de donnees</td></tr>`}</tbody>
+    </table></div>`;
+  renderRollPanels();
+}
+
+function renderRollPanels(){
+  const currentRolls=db.rolls.filter(r=>num(r.currentLength)>0).sort((a,b)=>a.article.localeCompare(b.article)||num(b.currentLength)-num(a.currentLength));
+  $('stk-global')?.insertAdjacentHTML('beforeend',`
+    <div class="section-divider"></div>
+    <div class="panel-head"><div><h2>Rouleaux moquette - stock actuel</h2><p>Vue detaillee des rouleaux entiers et deja coupes.</p></div></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>#</th><th>Rouleau</th><th>Article</th><th>Couleur</th><th>Site</th><th>Longueur restante</th><th>Largeur</th><th>Statut</th></tr></thead>
+      <tbody>${currentRolls.length?currentRolls.map((r,i)=>`<tr><td>${i+1}</td><td>${r.code||r.id}</td><td>${r.article}</td><td>${r.color||'-'}</td><td>${siteName(r.site)}</td><td><strong>${r.currentLength} cm</strong></td><td>${r.width} cm</td><td><span class="badge ${r.status==='full'?'b-ok':'b-purple'}">${r.status==='full'?'Entier':'Coupe'}</span></td></tr>`).join(''):`<tr><td class="empty" colspan="8">Aucun rouleau moquette en stock</td></tr>`}</tbody>
+    </table></div>
+    <div class="section-divider"></div>
+    <div class="panel-head"><div><h2>Historique des coupes</h2><p>Historique par rouleau des morceaux vendus et des restes generes.</p></div></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>#</th><th>Date</th><th>Rouleau</th><th>Article</th><th>Client</th><th>Site</th><th>Coupe vendue</th><th>Reste</th><th>Total</th><th>Remarque</th></tr></thead>
+      <tbody>${db.rollCuts.length?db.rollCuts.slice().sort((a,b)=>b.date.localeCompare(a.date)).map((r,i)=>`<tr><td>${i+1}</td><td>${r.date}</td><td>${r.rollCode||r.rollId}</td><td>${r.article}</td><td>${r.client}</td><td>${siteName(r.site)}</td><td>${r.soldLength} x ${r.width} cm</td><td>${r.remainingLength} x ${r.width} cm</td><td>${dh(r.total)}</td><td>${r.note||'-'}</td></tr>`).join(''):`<tr><td class="empty" colspan="10">Aucune coupe enregistree</td></tr>`}</tbody>
+    </table></div>`);
+}
+
+let analyticsPeriod=30;
+function renderAnalytics(){
+  const periodLabel={7:'7 jours',30:'30 jours',90:'3 mois',180:'6 mois',365:'1 an',0:'Tout'};
+
+  // â”€â”€ TOP VENTES â”€â”€
+  const sales=db.sales.filter(s=>dateInPeriod(s.date,analyticsPeriod||0));
+  const saleByArticle={};
+  sales.forEach(s=>{
+    if(!saleByArticle[s.article])saleByArticle[s.article]={article:s.article,qty:0,total:0,count:0};
+    saleByArticle[s.article].qty+=num(s.qty);
+    saleByArticle[s.article].total+=num(s.total);
+    saleByArticle[s.article].count++;
+  });
+  const topSales=Object.values(saleByArticle).sort((a,b)=>b.total-a.total).slice(0,10);
+  const maxTotal=topSales[0]?.total||1;
+
+  const saleByClient={};
+  sales.forEach(s=>{
+    if(!saleByClient[s.client])saleByClient[s.client]={client:s.client,total:0,count:0};
+    saleByClient[s.client].total+=num(s.total);
+    saleByClient[s.client].count++;
+  });
+  const topClients=Object.values(saleByClient).sort((a,b)=>b.total-a.total).slice(0,5);
+
+  const periodBtns=Object.entries(periodLabel).map(([d,l])=>`<button class="period-btn${analyticsPeriod==d?' active':''}" onclick="analyticsPeriod=${d};renderAnalytics()">${l}</button>`).join('');
+
+  $('ana-topsales').innerHTML=`
+    <div class="panel-head"><div><h2>Produits les plus vendus</h2><p>Classement par chiffre d'affaires sur la periode choisie.</p></div></div>
+    <div class="period-filter"><label>Periode :</label>${periodBtns}</div>
+    <div class="analytics-grid">
+      <div class="analytics-card">
+        <h4>Top articles par CA</h4>
+        ${topSales.length?topSales.map((r,i)=>`<div class="rank-item">
+          <div class="rank-num ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${i+1}</div>
+          <div class="rank-info">
+            <div class="rank-name">${r.article}</div>
+            <div class="rank-sub">${r.qty} unites · ${r.count} vente(s)</div>
+            <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(r.total/maxTotal*100)}%"></div></div>
+          </div>
+          <div class="rank-val">${dh(r.total)}</div>
+        </div>`).join(''):'<p style="color:var(--mut);text-align:center;padding:20px">Aucune vente sur cette periode</p>'}
+      </div>
+      <div class="analytics-card">
+        <h4>Top clients</h4>
+        ${topClients.length?topClients.map((r,i)=>`<div class="rank-item">
+          <div class="rank-num ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${i+1}</div>
+          <div class="rank-info"><div class="rank-name">${r.client}</div><div class="rank-sub">${r.count} commande(s)</div></div>
+          <div class="rank-val">${dh(r.total)}</div>
+        </div>`).join(''):'<p style="color:var(--mut);text-align:center;padding:20px">Aucun client sur cette periode</p>'}
+      </div>
+    </div>
+    <div class="analytics-card">
+      <h4>Tableau detaille des ventes</h4>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Rang</th><th>Article</th><th>Qte vendue</th><th>Nb. transactions</th><th>CA total</th></tr></thead>
+        <tbody>${topSales.map((r,i)=>`<tr><td><span class="badge b-brand">#${i+1}</span></td><td>${r.article}</td><td>${r.qty}</td><td>${r.count}</td><td><strong>${dh(r.total)}</strong></td></tr>`).join('')||`<tr><td class="empty" colspan="5">Aucune vente</td></tr>`}</tbody>
+      </table></div>
+    </div>`;
+
+  // â”€â”€ ROTATION STOCK â”€â”€
+  const rotRows=stockRows().map(r=>{
+    const stock=globalQty(r.key);
+    const soldInPeriod=db.sales.filter(s=>s.article===r.article&&(!analyticsPeriod||dateInPeriod(s.date,analyticsPeriod))).reduce((s,x)=>s+num(x.qty),0);
+    const periodDays=analyticsPeriod||365;
+    const rotationAnnuelle=stock>0?(soldInPeriod/stock*(365/periodDays)):0;
+    const joursStockage=soldInPeriod>0?Math.round(stock/soldInPeriod*periodDays):null;
+    let rotClass,rotLabel;
+    if(soldInPeriod===0){rotClass='rot-dead';rotLabel='Inactif'}
+    else if(rotationAnnuelle>=12){rotClass='rot-fast';rotLabel='Tres rapide'}
+    else if(rotationAnnuelle>=6){rotClass='rot-medium';rotLabel='Moyen'}
+    else{rotClass='rot-slow';rotLabel='Lente'}
+    return{...r,stock,soldInPeriod,rotationAnnuelle:rotationAnnuelle.toFixed(1),joursStockage,rotClass,rotLabel};
+  }).filter(r=>r.stock>0||r.soldInPeriod>0).sort((a,b)=>parseFloat(b.rotationAnnuelle)-parseFloat(a.rotationAnnuelle));
+
+  $('ana-rotation').innerHTML=`
+    <div class="panel-head"><div><h2>Rotation du stock</h2><p>Indice de rotation = ventes / stock moyen x (365 / jours periode)</p></div></div>
+    <div class="period-filter"><label>Periode :</label>${periodBtns}</div>
+    <div class="summary">
+      <div class="box"><div class="k">Articles analyses</div><div class="v">${rotRows.length}</div></div>
+      <div class="box"><div class="k">Rotation rapide (&gt;12)</div><div class="v" style="color:var(--ok)">${rotRows.filter(r=>r.rotClass==='rot-fast').length}</div></div>
+      <div class="box"><div class="k">Rotation lente (&lt;6)</div><div class="v" style="color:var(--warn)">${rotRows.filter(r=>r.rotClass==='rot-slow').length}</div></div>
+      <div class="box"><div class="k">Inactifs (0 vente)</div><div class="v" style="color:var(--danger)">${rotRows.filter(r=>r.rotClass==='rot-dead').length}</div></div>
+    </div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>#</th><th>Article</th><th>Couleur</th><th>Dim.</th><th>Stock actuel</th><th>Ventes periode</th><th>Rotation/an</th><th>Jours de stock</th><th>Vitesse</th></tr></thead>
+      <tbody>${rotRows.length?rotRows.map((r,i)=>`<tr>
+        <td>${i+1}</td><td>${r.article}</td><td>${r.color||'-'}</td><td>${r.length} x ${r.width}</td>
+        <td>${r.stock}</td><td>${r.soldInPeriod}</td>
+        <td><strong>${r.rotationAnnuelle}x</strong></td>
+        <td>${r.joursStockage!==null?r.joursStockage+'j':'-'}</td>
+        <td><span class="rotation-badge ${r.rotClass}">${r.rotLabel}</span></td>
+      </tr>`).join(''):`<tr><td class="empty" colspan="9">Aucune donnee de stock</td></tr>`}</tbody>
+    </table></div>`;
+
+  // â”€â”€ VITESSE DE ROTATION â”€â”€
+  $('ana-vitesse').innerHTML=`
+    <div class="panel-head"><div><h2>⚡ Vitesse de rotation</h2><p>Jours moyens pour ecouler le stock actuel au rythme de vente actuel.</p></div></div>
+    <div class="period-filter"><label>Periode :</label>${periodBtns}</div>
+    <div class="analytics-grid">
+      <div class="analytics-card">
+        <h4>Articles a rotation rapide</h4>
+        ${rotRows.filter(r=>r.rotClass==='rot-fast').slice(0,6).map((r,i)=>`<div class="rank-item">
+          <div class="rank-num gold">${i+1}</div>
+          <div class="rank-info"><div class="rank-name">${r.article}</div><div class="rank-sub">${r.color||''} ${r.length}x${r.width}</div></div>
+          <div style="text-align:right"><div class="rank-val">${r.rotationAnnuelle}x/an</div><div style="font-size:11px;color:var(--ok)">${r.joursStockage||'?'}j de stock</div></div>
+        </div>`).join('')||'<p style="color:var(--mut);text-align:center;padding:20px">Aucun article a rotation rapide</p>'}
+      </div>
+      <div class="analytics-card">
+        <h4>⚠ Articles dormants / lents</h4>
+        ${rotRows.filter(r=>r.rotClass==='rot-slow'||r.rotClass==='rot-dead').slice(0,6).map((r,i)=>`<div class="rank-item">
+          <div class="rank-num" style="background:var(--danger-bg);color:var(--danger)">${i+1}</div>
+          <div class="rank-info"><div class="rank-name">${r.article}</div><div class="rank-sub">${r.color||''} ${r.length}x${r.width}</div></div>
+          <div style="text-align:right"><div class="rank-val" style="color:var(--danger)">${r.rotationAnnuelle}x/an</div><div style="font-size:11px;color:var(--mut)">${r.joursStockage||'âˆž'}j de stock</div></div>
+        </div>`).join('')||'<p style="color:var(--mut);text-align:center;padding:20px">Aucun article lent - bravo !</p>'}
+      </div>
+    </div>
+    <div style="background:var(--brand-light);border:1px solid #bfdbfe;border-radius:var(--radius);padding:16px;margin-top:4px">
+      <h4 style="font-size:13px;font-weight:700;color:var(--brand);margin-bottom:8px">Conseils automatiques</h4>
+      <ul style="font-size:13px;color:var(--ink);line-height:2;list-style:none;padding:0">
+        ${rotRows.filter(r=>r.rotClass==='rot-dead').length?`<li>⚠ <strong>${rotRows.filter(r=>r.rotClass==='rot-dead').length} article(s)</strong> sans aucune vente sur la periode - envisagez un destockage ou une promotion.</li>`:''}
+        ${rotRows.filter(r=>r.rotClass==='rot-fast'&&(r.joursStockage||0)<14).length?`<li>🚨 <strong>${rotRows.filter(r=>r.rotClass==='rot-fast'&&(r.joursStockage||0)<14).length} article(s)</strong> ont moins de 14 jours de stock restant - reapprovisionnez en urgence.</li>`:''}
+        ${rotRows.filter(r=>r.rotClass==='rot-slow'&&r.stock>10).length?`<li>📦 <strong>${rotRows.filter(r=>r.rotClass==='rot-slow'&&r.stock>10).length} article(s)</strong> ont un stock eleve avec une rotation lente - evitez de sur-commander.</li>`:''}
+        ${!rotRows.filter(r=>r.rotClass==='rot-dead').length&&!rotRows.filter(r=>r.rotClass==='rot-fast'&&(r.joursStockage||0)<14).length?'<li>Votre gestion de stock semble equilibree sur la periode selectionnee.</li>':''}
+      </ul>
+    </div>`;
+
+  // â”€â”€ RAPPORT ECRIT CONSEILS â”€â”€
+  const now_r=new Date();
+  const periodName=periodLabel[analyticsPeriod]||'Tout';
+  const totalCA=sales.reduce((s,x)=>s+num(x.total),0);
+  const totalQty=sales.reduce((s,x)=>s+num(x.qty),0);
+  const totalPurchasePeriod=db.purchases.filter(p=>dateInPeriod(p.date,analyticsPeriod||0)).reduce((s,x)=>s+num(x.total),0);
+  const marge=totalCA-totalPurchasePeriod;
+  const txMarge=totalCA>0?((marge/totalCA)*100).toFixed(1):0;
+  const produitsInteressants=topSales.filter(r=>r.total>0).map(r=>{
+    const rot=rotRows.find(x=>x.article===r.article);
+    return{...r,rotation:rot?.rotationAnnuelle||'0',rotClass:rot?.rotClass||'rot-dead',joursStock:rot?.joursStockage};
+  }).filter(r=>parseFloat(r.rotation)>=6).slice(0,5);
+  const produitsRisque=rotRows.filter(r=>r.rotClass==='rot-slow'||r.rotClass==='rot-dead').sort((a,b)=>b.stock-a.stock).slice(0,5);
+  const urgentReappro=rotRows.filter(r=>r.rotClass==='rot-fast'&&(r.joursStockage||0)<14);
+  const meilleurClient=topClients[0];
+  const rapportDate=now_r.toLocaleDateString('fr-MA',{day:'2-digit',month:'long',year:'numeric'});
+
+  if($('ana-rapport'))$('ana-rapport').innerHTML=`
+    <div class="panel-head"><div><h2>Rapport & Conseils Produits</h2><p>Analyse automatique - Periode : ${periodName} - Genere le ${rapportDate}</p></div>
+      <div class="panel-actions"><div class="period-filter" style="margin:0"><label>Periode :</label>${periodBtns}</div></div>
+    </div>
+    <div style="background:linear-gradient(135deg,#1a56db,#7c3aed);border-radius:14px;padding:20px;color:#fff;margin-bottom:16px">
+      <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;opacity:.9">Resume executif - ${periodName}</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+        <div style="background:rgba(255,255,255,.12);border-radius:10px;padding:12px"><div style="font-size:10px;opacity:.7;text-transform:uppercase">Chiffre d'affaires</div><div style="font-size:20px;font-weight:700;margin-top:4px">${dh(totalCA)}</div></div>
+        <div style="background:rgba(255,255,255,.12);border-radius:10px;padding:12px"><div style="font-size:10px;opacity:.7;text-transform:uppercase">Unites vendues</div><div style="font-size:20px;font-weight:700;margin-top:4px">${totalQty}</div></div>
+        <div style="background:rgba(255,255,255,.12);border-radius:10px;padding:12px"><div style="font-size:10px;opacity:.7;text-transform:uppercase">Achats periode</div><div style="font-size:20px;font-weight:700;margin-top:4px">${dh(totalPurchasePeriod)}</div></div>
+        <div style="background:rgba(255,255,255,.12);border-radius:10px;padding:12px"><div style="font-size:10px;opacity:.7;text-transform:uppercase">Marge brute estimée</div><div style="font-size:20px;font-weight:700;margin-top:4px;color:${marge>=0?'#6ee7b7':'#fca5a5'}">${dh(marge)} (${txMarge}%)</div></div>
+      </div>
+    </div>
+    <div style="background:#ecfdf5;border:1px solid #6ee7b7;border-radius:14px;padding:18px;margin-bottom:14px">
+      <h3 style="font-size:15px;font-weight:700;color:#065f46;margin-bottom:10px">Produits Interessants - À Valoriser</h3>
+      ${produitsInteressants.length?`<p style="font-size:13px;color:#047857;margin-bottom:12px;line-height:1.7">Ces produits combinent une bonne rotation et un chiffre d'affaires significatif. Ce sont vos <strong>locomotives commerciales</strong> - assurez-vous d'avoir toujours du stock disponible.</p>
+      ${produitsInteressants.map((r,i)=>`<div style="background:#fff;border:1px solid #a7f3d0;border-radius:10px;padding:14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:14px">
+        <div style="width:32px;height:32px;background:#059669;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0">${i+1}</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:700;color:#065f46">${r.article}</div>
+          <div style="font-size:12px;color:#047857;margin-top:4px">unites · 💰 CA : ${dh(r.total)} · 🔄 Rotation : ${r.rotation}x/an · ⏱ ${r.joursStock||'?'}j de stock</div>
+          <div style="font-size:12px;color:#374151;margin-top:6px;line-height:1.6;background:#f0fdf4;border-radius:6px;padding:8px"><strong>Conseil :</strong> ${parseFloat(r.rotation)>=12?`Ce produit tourne tres vite. Commandez en avance - rupture de stock possible sous ${r.joursStock||'peu de'} jours.`:`Produit stable et porteur. Maintenez un stock confortable et negociez un meilleur prix grÃ¢ce au volume.`}</div>
+        </div></div>`).join('')}`:`<p style="color:#047857;font-size:13px;padding:10px 0">Pas assez de donnees pour identifier des produits interessants sur cette periode.</p>`}
+    </div>
+    <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:14px;padding:18px;margin-bottom:14px">
+      <h3 style="font-size:15px;font-weight:700;color:#991b1b;margin-bottom:10px">⚠ Produits a Risque - Stock Dormant</h3>
+      ${produitsRisque.length?`<p style="font-size:13px;color:#b91c1c;margin-bottom:12px;line-height:1.7">Ces produits ont un stock important mais se vendent peu. Ils immobilisent votre trésorerie. Une action commerciale ciblée est recommandée.</p>
+      ${produitsRisque.map(r=>`<div style="background:#fff;border:1px solid #fecaca;border-radius:10px;padding:14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:14px">
+        <div style="width:32px;height:32px;background:#dc2626;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0">!</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:700;color:#991b1b">${r.article} <span style="font-size:11px;font-weight:400">${r.color||''} - ${r.length}x${r.width}</span></div>
+          <div style="font-size:12px;color:#b91c1c;margin-top:4px">Stock : ${r.stock} · 📉 Ventes : ${r.soldInPeriod} · 🔄 ${r.rotationAnnuelle}x/an</div>
+          <div style="font-size:12px;color:#374151;margin-top:6px;line-height:1.6;background:#fff7f7;border-radius:6px;padding:8px"><strong>Conseil :</strong> ${r.rotClass==='rot-dead'?`Aucune vente sur la periode. Envisagez une promotion agressive, un retour fournisseur, ou un transfert vers un site plus actif.`:`Rotation lente. Evitez de renouveler avant d'ecouler le stock. Un geste commercial (remise 10â€“15%) peut accelerer les ventes.`}</div>
+        </div></div>`).join('')}`:`<p style="color:#b91c1c;font-size:13px;padding:10px 0">Aucun produit dormant identifie - bonne gestion !</p>`}
+    </div>
+    ${urgentReappro.length?`<div style="background:#fff7ed;border:1px solid #fdba74;border-radius:14px;padding:18px;margin-bottom:14px">
+      <h3 style="font-size:15px;font-weight:700;color:#9a3412;margin-bottom:10px">Reapprovisionnement Urgent (&lt;14j)</h3>
+      ${urgentReappro.map(r=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #fed7aa"><span style="font-size:18px">⚡</span><div><strong>${r.article}</strong> ${r.color||''} - <strong>${r.joursStockage||'?'}j</strong> de stock restant · Rotation ${r.rotationAnnuelle}x/an</div></div>`).join('')}
+    </div>`:''}
+    ${meilleurClient?`<div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:14px;padding:18px;margin-bottom:14px">
+      <h3 style="font-size:15px;font-weight:700;color:#5b21b6;margin-bottom:8px">⭐ Client Prioritaire</h3>
+      <p style="font-size:13px;color:#6d28d9;line-height:1.7"><strong>${meilleurClient.client}</strong> est votre meilleur client sur la periode avec <strong>${dh(meilleurClient.total)}</strong> en <strong>${meilleurClient.count} commande(s)</strong>. Accordez-lui une attention commerciale particuliere : tarifs preferentiels, stock prioritaire, fidelisation proactive.</p>
+    </div>`:''}
+    <div style="background:#f8fafc;border:1px solid var(--line);border-radius:14px;padding:18px">
+      <h3 style="font-size:13px;font-weight:700;color:var(--mut);margin-bottom:8px">Note de synthese</h3>
+      <p style="font-size:13px;color:var(--ink);line-height:1.8">Ce rapport est genere automatiquement a partir de vos donnees GestStock. Les conseils sont bases sur les ratios de rotation de stock et les tendances de vente. Pour affiner l'analyse, assurez-vous que toutes vos operations sont bien enregistrees et que vos prix fournisseurs sont a jour.</p>
+    </div>`;
+}
+
+// â”€â”€â”€â”€â”€ METRICS â”€â”€â”€â”€â”€
+function updateMetrics(){
+  const totalPurchase=db.purchases.reduce((s,x)=>s+num(x.total),0);
+  const totalSale=db.sales.reduce((s,x)=>s+num(x.total),0);
+  const stock=stockRows().reduce((s,r)=>s+globalQty(r.key),0);
+  const surfaceTotal=stockRows().reduce((s,r)=>s+surface(r.length,r.width,globalQty(r.key)),0);
+  $('m-articles').textContent=db.articles.length;
+  $('m-sites').textContent=db.sites.length;
+  $('m-purchases').textContent=dh(totalPurchase);
+  $('m-sales').textContent=dh(totalSale);
+  $('m-stock').textContent=stock;
+  $('m-surface').textContent=sqm(surfaceTotal);
+}
+
+function sanitizeVisibleText(){
+  const replacements=[
+    ['mÃ‚²','m2'],
+    ['m²','m2'],
+    ['Ã¢Â¬â€¡ Achat fournisseur','Achat fournisseur'],
+    ['â¬‡ Achat fournisseur','Achat fournisseur'],
+    ['Ã¢Å¡Â¡ Saisie rapide','Saisie rapide'],
+    ['⚡ Saisie rapide','Saisie rapide'],
+    ['Ã¢Â¬â€  Vente client','Vente client'],
+    ['â¬† Vente client','Vente client'],
+    ['Ã¢â€ â€ Transfert intersite','Transfert intersite'],
+    ['â†” Transfert intersite','Transfert intersite'],
+    ['Ã¢Å¾â€¢ Ajouter transfert','Ajouter transfert'],
+    ['➕ Ajouter transfert','Ajouter transfert'],
+    ['Import Excel Ã¢â€ â€™ Stock','Import Excel vers Stock'],
+    ['Import Excel â†’ Stock','Import Excel vers Stock'],
+    ['Ã¢Å¡Â  La ligne 1 est ignoree (en-tetes). Les donnees commencent a la ligne 2.','La ligne 1 est ignoree (en-tetes). Les donnees commencent a la ligne 2.'],
+    ['⚠ La ligne 1 est ignoree (en-tetes). Les donnees commencent a la ligne 2.','La ligne 1 est ignoree (en-tetes). Les donnees commencent a la ligne 2.'],
+    ['Ã°Å¸â€˜Â¤ Compte client','Compte client'],
+    ['👤 Compte client','Compte client'],
+    ['Ã°Å¸ÂÂ­ Compte fournisseur','Compte fournisseur'],
+    ['ðŸ­ Compte fournisseur','Compte fournisseur'],
+    ['operations Ã¢Ë†â€™ paiements','operations - paiements'],
+    ['operations âˆ’ paiements','operations - paiements'],
+    ['Prix m2','Prix m2'],
+    ['Qte','Qte'],
+    ['Ã¢Å“â€¢','X'],
+    ['Ã¢Å“Â','Modifier'],
+    ['Ã°Å¸â€”â€˜','Suppr'],
+    ['ÃƒÆ’-','x'],
+    ['Ã¢â€ â€™','vers'],
+    ['SÃ©lectionner','Selectionner'],
+    ['AperÃƒÂ§u','Apercu'],
+    ['Pret','Pret'],
+    ['Aucune operation','Aucune operation'],
+    ['Aucune donnee','Aucune donnee']
+  ];
+  const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+  const nodes=[];
+  while(walker.nextNode())nodes.push(walker.currentNode);
+  nodes.forEach(node=>{
+    let text=node.nodeValue;
+    let next=text;
+    replacements.forEach(([a,b])=>{next=next.split(a).join(b)});
+    if(next!==text)node.nodeValue=next;
+  });
+}
+
+// â”€â”€â”€â”€â”€ CRUD FUNCS â”€â”€â”€â”€â”€
+function saveArticle(){const name=norm($('f-article-name').value),type=$('f-article-type')?.value||'tapis',defaultPm2=num($('f-article-default').value);if(!name)return alert('Nom article requis');if(edit.article<0)db.articles.push({id:uid('art'),name,type,defaultPm2});else db.articles[edit.article]={...db.articles[edit.article],name,type,defaultPm2};clearForm('article');save();refresh();notify('Article enregistré')}
+function saveClient(){const name=norm($('f-client-name').value),city=norm($('f-client-city').value),initial=num($('f-client-initial').value);if(!name||!city)return alert('Nom et ville requis');if(edit.client<0)db.clients.push({id:uid('cli'),name,city,initial});else db.clients[edit.client]={...db.clients[edit.client],name,city,initial};clearForm('client');save();refresh();notify('Client enregistre')}
+function saveSupplier(){const name=norm($('f-supplier-name').value),city=norm($('f-supplier-city').value),initial=num($('f-supplier-initial').value);if(!name||!city)return alert('Nom et ville requis');if(edit.supplier<0)db.suppliers.push({id:uid('sup'),name,city,initial});else db.suppliers[edit.supplier]={...db.suppliers[edit.supplier],name,city,initial};clearForm('supplier');save();refresh();notify('Fournisseur enregistre')}
+function saveSite(){const name=norm($('f-site-name').value),city=norm($('f-site-city').value);if(!name||!city)return alert('Nom et ville requis');if(edit.site<0)db.sites.push({id:uid('site'),name,city});else db.sites[edit.site]={...db.sites[edit.site],name,city};clearForm('site');save();refresh();notify('Site enregistre')}
+function saveClientPrice(){const client=$('f-cp-client').value,article=$('f-cp-article').value,pm2=num($('f-cp-pm2').value);if(!client||!article||pm2<=0)return alert('Client, article, prix requis');if(edit.cp<0)db.clientPrices.push({id:uid('cp'),client,article,pm2});else db.clientPrices[edit.cp]={...db.clientPrices[edit.cp],client,article,pm2};clearForm('cp');save();refresh();notify('Prix client enregistre')}
+function saveSupplierPrice(){const supplier=$('f-sp-supplier').value,article=$('f-sp-article').value,pm2=num($('f-sp-pm2').value);if(!supplier||!article||pm2<=0)return alert('Fournisseur, article, prix requis');if(edit.sp<0)db.supplierPrices.push({id:uid('sp'),supplier,article,pm2});else db.supplierPrices[edit.sp]={...db.supplierPrices[edit.sp],supplier,article,pm2};clearForm('sp');save();refresh();notify('Prix fournisseur enregistre')}
+function savePurchase(){
+  const supplier=$('p-supplier').value,article=$('p-article').value,site=$('p-site').value,
+    color=norm($('p-color').value),length=num($('p-length').value),width=num($('p-width').value),
+    qty=intv($('p-qty').value),pm2=num($('p-pm2').value),date=$('p-date').value,note=norm($('p-note').value);
+  if(!supplier||!article||!site||!date||!color||!length||!width||qty<=0||pm2<=0)return alert('Champs achat incomplets');
+  if(isMoquetteArticle(article)&&length<=800)return alert('Pour un article Moquette, la longueur du rouleau doit etre superieure a 800 cm.');
+  const key=keyOf(article,color,length,width),total=surface(length,width,qty)*pm2;
+  sessionLines.purchase.push({supplier,article,site,color,length,width,qty,pm2,date,note,key,total});
+  const saved={supplier,article,site,color,length,width,pm2,date,note};
+  renderMovements();
+  Object.entries(saved).forEach(([k,v])=>{const el=$(`p-${k}`);if(el)el.value=v});
+  $('p-qty').value='';
+  notify('Ligne ajoutee - cliquez Confirmer pour enregistrer');
+}
+function saveSale(){
+  const horsStockChecked=$('s-hors-stock')?.checked||false;
+  const client=$('s-client').value,article=$('s-article').value,site=horsStockChecked?'':($('s-site')?.value||''),
+    color=norm($('s-color').value),length=num($('s-length').value),width=num($('s-width').value),
+    qty=intv($('s-qty').value),pm2=num($('s-pm2').value),date=$('s-date').value,note=norm($('s-note').value);
+  if(!horsStockChecked&&(!client||!article||!site||!date||!color||!length||!width||qty<=0||pm2<=0))return alert('Champs vente incomplets');
+  if(isMoquetteArticle(article)){
+    const rollId=$('s-roll')?.value;
+    const roll=getRollById(rollId);
+    if(!roll)return alert('Choisissez le rouleau a couper.');
+    const available=Math.max(0,num(roll.currentLength)-pendingRollUsage(roll.id));
+    if(length>available)return alert(`Longueur insuffisante sur ce rouleau. Disponible: ${available} cm`);
+    const total=surface(length,width,1)*pm2;
+    sessionLines.sale.push({
+      client,article,site,color,length,width,qty:1,pm2,date,note,
+      key:keyOf(article,color,length,width),total,
+      moquetteSale:true,stockIgnore:true,rollId:roll.id,rollCode:roll.code,
+      sourceLength:available,remainingLength:available-length,sourceKey:keyOf(article,color,available,width)
+    });
+    const saved={client,article,site,color,width,pm2,date,note};
+    renderMovements();
+    Object.entries(saved).forEach(([k,v])=>{const el=$(`s-${k}`);if(el)el.value=v});
+    if($('s-roll'))$('s-roll').value=roll.id;
+    $('s-qty').value='1';$('s-length').value='';
+    if(window.onSaleRollChange)window.onSaleRollChange();
+    notify('Coupe moquette ajoutee - cliquez Confirmer pour enregistrer');
+    return;
+  }
+  const horsStock=horsStockChecked;
+  if(horsStock){
+    // Mode libre: pas de site, pas de stock check, article/couleur/long/larg en texte libre
+    if(!client||!article||!date||!color||!length||!width||qty<=0||pm2<=0)return alert('Champs vente incomplets (Client, Article, Couleur, Long., Larg., Qte, Prix m2 requis)');
+    const key=keyOf(article,color,length,width);
+    const total=surface(length,width,qty)*pm2;
+    sessionLines.sale.push({client,article,site:'',color,length,width,qty,pm2,date,note,key,total,stockIgnore:true,horsStock:true});
+    renderMovements();
+    // Restore hors-stock checkbox and free fields state after re-render
+    if($('s-hors-stock')){$('s-hors-stock').checked=true;window.onHorsStockChange();}
+    const saved={client,color,length,width,pm2,date,note};
+    Object.entries(saved).forEach(([k,v])=>{const el=$(`s-${k}`);if(el)el.value=v});
+    if($('s-article'))$('s-article').value=article;
+    $('s-qty').value='';
+    notify('Ligne hors stock ajoutee - cliquez Confirmer pour enregistrer');
+    return;
+  }
+  const key=keyOf(article,color,length,width);
+  if(stockQty(key,site)<qty)return alert(`Stock insuffisant sur ce site. Disponible: ${stockQty(key,site)}\n\nSi cet article est hors stock, cochez la case "Article hors stock" pour enregistrer sans affecter le stock.`);
+  const total=surface(length,width,qty)*pm2;
+  sessionLines.sale.push({client,article,site,color,length,width,qty,pm2,date,note,key,total,stockIgnore:false,horsStock:false});
+  const saved={client,article,site,color,length,width,pm2,date,note};
+  renderMovements();
+  Object.entries(saved).forEach(([k,v])=>{const el=$(`s-${k}`);if(el)el.value=v});
+  $('s-qty').value='';
+  notify('Ligne ajoutee - cliquez Confirmer pour enregistrer');
+}
+// ───── HORS STOCK MODE ─────
+window.onHorsStockChange=function(){
+  const hs=$('s-hors-stock')?.checked;
+  if(!hs){
+    // Restore normal mode: replace free inputs with selects
+    const articleField=$('s-article-field');
+    if(articleField&&articleField.querySelector('input')){
+      const val=articleField.querySelector('input').value;
+      articleField.innerHTML=`<label>Article</label><select id="s-article" onchange="onSaleArticleChange()">${opt(db.articles,'Article')}</select>`;
+      // try restore value
+      if($('s-article'))$('s-article').value=val;
+    }
+    const colorField=$('s-color-field');
+    if(colorField&&colorField.querySelector('input')){
+      const val=colorField.querySelector('input').value;
+      colorField.innerHTML=`<label>Couleur</label><select id="s-color"><option value="">-- Selectionner couleur --</option></select>`;
+    }
+    const dimField=$('s-dim-field');
+    if(dimField&&dimField.style.display==='none'){
+      dimField.style.display='';
+    }
+    // Show site field
+    const siteField=$('s-site-field');
+    if(siteField)siteField.style.display='';
+    // Show stock dispo box
+    const dispBox=$('s-stock-dispo-box');
+    if(dispBox)dispBox.style.display='';
+    // Lock length/width
+    const sl=$('s-length'),sw=$('s-width');
+    if(sl){sl.readOnly=true;sl.style.background='#f0f4f9';}
+    if(sw){sw.readOnly=true;sw.style.background='#f0f4f9';}
+    bindMovementCalculators();
+    return;
+  }
+  // HORS STOCK MODE: free text for article, color, length, width; hide site, dim select
+  const articleField=$('s-article-field');
+  if(articleField){
+    const curVal=$('s-article')?.value||'';
+    articleField.innerHTML=`<label>Article (libre)</label><input id="s-article" type="text" placeholder="Nom article" value="${curVal}">`;
+  }
+  const colorField=$('s-color-field');
+  if(colorField){
+    colorField.innerHTML=`<label>Couleur (libre)</label><input id="s-color" type="text" placeholder="Couleur">`;
+  }
+  const dimField=$('s-dim-field');
+  if(dimField)dimField.style.display='none';
+  // Hide site field
+  const siteField=$('s-site-field');
+  if(siteField)siteField.style.display='none';
+  // Hide stock dispo box
+  const dispBox=$('s-stock-dispo-box');
+  if(dispBox)dispBox.style.display='none';
+  bindMovementCalculators();
+  // IMPORTANT: re-unlock length/width AFTER bindMovementCalculators (which may lock them via onSaleArticleChange)
+  const sl=$('s-length'),sw=$('s-width');
+  if(sl){sl.readOnly=false;sl.style.background='';sl.style.cursor='';}
+  if(sw){sw.readOnly=false;sw.style.background='';sw.style.cursor='';}
+  // Also re-unlock qty (moquette logic may have locked it)
+  const sq=$('s-qty');
+  if(sq){sq.readOnly=false;sq.style.background='';}
+};
+
+function saveTransfer(){
+  const article=$('t-article').value,from=$('t-from').value,to=$('t-to').value,
+    color=norm($('t-color').value),length=num($('t-length').value),width=num($('t-width').value),
+    qty=intv($('t-qty').value),date=$('t-date').value,note=norm($('t-note').value);
+  if(!article||!from||!to||from===to||!date||!color||!length||!width||qty<=0)return alert('Champs transfert incomplets');
+  const key=keyOf(article,color,length,width);
+  if(stockQty(key,from)<qty)return alert(`Stock insuffisant au site source. Disponible: ${stockQty(key,from)}`);
+  sessionLines.transfer.push({article,from,to,color,length,width,qty,date,note,key});
+  const saved={article,from,to,color,length,width,date,note};
+  renderMovements();
+  Object.entries(saved).forEach(([k,v])=>{const el=$(`t-${k}`);if(el)el.value=v});
+  $('t-qty').value='';
+  notify('Transfert ajoute - cliquez Confirmer pour enregistrer');
+}
+function saveInventory(){
+  const article=$('i-article').value,site=$('i-site').value,
+    color=norm($('i-color').value),length=num($('i-length').value),width=num($('i-width').value),
+    adjust=intv($('i-adjust').value),date=$('i-date').value,note=norm($('i-note').value);
+  if(!article||!site||!date||!color||!length||!width||adjust===0)return alert('Champs inventaire incomplets');
+  const key=keyOf(article,color,length,width);
+  sessionLines.inventory.push({article,site,color,length,width,adjust,date,note,key});
+  const saved={article,site,color,length,width,date,note};
+  renderInventoryImport();
+  Object.entries(saved).forEach(([k,v])=>{const el=$(`i-${k}`);if(el)el.value=v});
+  $('i-adjust').value='';
+  notify('Ajustement ajoute - cliquez Confirmer pour enregistrer');
+}
+let pendingPayment=null;
+function saveAccountPayment(type){
+  const name=$(type+'-account-select').value,date=$(type+'-pay-date').value,
+    amount=num($(type+'-pay-amount').value),mode=$(type+'-pay-mode').value,
+    due=$(type+'-pay-due').value,note=norm($(type+'-pay-note').value);
+  if(!name||!date||amount<=0)return alert('Paiement incomplet');
+  // If mode with due date (LC or Cheque) and due is in future - show effect modal
+  if((mode==='LC'||mode==='Cheque')&&due){
+    const dueDate=new Date(due);const today_=new Date();today_.setHours(0,0,0,0);dueDate.setHours(0,0,0,0);
+    if(dueDate>today_){
+      pendingPayment={type,name,date,amount,mode,due,note};
+      $('effect-modal-detail').innerHTML=`
+        <strong>${type==='client'?'Client':'Fournisseur'} :</strong> ${name}<br>
+        <strong>Montant :</strong> ${dh(amount)}<br>
+        <strong>Mode :</strong> ${mode}<br>
+        <strong>Echeance :</strong> ${due}<br>
+        <strong>Jours restants :</strong> ${Math.round((dueDate-today_)/86400000)}j`;
+      $('effect-modal').style.display='flex';
+      return;
+    }
+  }
+  doSavePayment({type,name,date,amount,mode,due,note,deductNow:true});
+}
+function doSavePayment(p){
+  db.payments.push({id:uid('pay'),type:p.type,name:p.name,date:p.date,amount:p.amount,mode:p.mode,due:p.due||'',note:p.note,deductNow:p.deductNow});
+  // Clear form
+  const type=p.type;
+  $(type+'-pay-amount').value='';$(type+'-pay-note').value='';$(type+'-pay-due').value='';$(type+'-pay-days').value='0';
+  save();refresh();notify('Paiement ajoute');
+}
+function clearForm(type){
+  if(type==='article')edit.article=-1;if(type==='client')edit.client=-1;
+  if(type==='supplier')edit.supplier=-1;if(type==='site')edit.site=-1;
+  if(type==='cp')edit.cp=-1;if(type==='sp')edit.sp=-1;
+  refresh();
+}
+function clearFormMv(type){renderMovements()}
+function clearFormInv(){renderInventoryImport()}
+function editArticle(i){edit.article=i;refresh()}
+function editClientRow(i){edit.client=i;refresh()}
+function editSupplierRow(i){edit.supplier=i;refresh()}
+function editSiteRow(i){edit.site=i;refresh()}
+function editClientPrice(i){edit.cp=i;refresh()}
+function editSupplierPrice(i){edit.sp=i;refresh()}
+function removeRow(name,i){if(!confirm('Supprimer cet élément ?'))return;db[name].splice(i,1);save();refresh();notify('Supprimé')}
+function removeSite(i){const id=db.sites[i].id;const used=[...db.purchases,...db.sales].some(x=>x.site===id)||db.transfers.some(x=>x.from===id||x.to===id)||db.inventories.some(x=>x.site===id);if(used)return alert('Site utilise dans les operations - suppression impossible.');db.sites.splice(i,1);save();refresh()}
+function removeSessionLine(type,i){sessionLines[type].splice(i,1);if(type==='inventory')renderInventoryImport();else renderMovements();}
+function setAccountView(type,value){view[type+'Account']=value;refresh()}
+
+// â”€â”€â”€â”€â”€ EDIT LINE MODAL â”€â”€â”€â”€â”€
+let editLineState={type:'',index:-1};
+function openEditLine(type,i){
+  const r=sessionLines[type][i];
+  editLineState={type,index:i};
+  $('edit-line-title').textContent=`Modifier ligne ${i+1}`;
+  $('edit-line-sub').textContent=type==='purchase'?'Achat fournisseur':'Vente client';
+  const fields=[
+    {id:'el-date',label:'Date',type:'date',val:r.date},
+    {id:'el-color',label:'Couleur',type:'text',val:r.color},
+    {id:'el-length',label:'Longueur',type:'number',val:r.length},
+    {id:'el-width',label:'Largeur',type:'number',val:r.width},
+    {id:'el-qty',label:'Quantite',type:'number',val:r.qty},
+    {id:'el-pm2',label:'Prix m2',type:'number',val:r.pm2},
+    {id:'el-note',label:'Remarque',type:'text',val:r.note||''},
+  ];
+  $('edit-line-fields').innerHTML=fields.map(f=>`<div class="field"><label>${f.label}</label><input id="${f.id}" type="${f.type}" value="${f.val}" step="${f.type==='number'?'0.01':''}"></div>`).join('');
+  $('edit-line-modal').style.display='flex';
+}
+$('edit-line-save').addEventListener('click',function(){
+  const{type,index}=editLineState;if(index<0)return;
+  const r=sessionLines[type][index];
+  r.date=$('el-date').value||r.date;
+  r.color=$('el-color').value||r.color;
+  r.length=num($('el-length').value)||r.length;
+  r.width=num($('el-width').value)||r.width;
+  r.qty=intv($('el-qty').value)||r.qty;
+  r.pm2=num($('el-pm2').value)||r.pm2;
+  r.note=$('el-note').value;
+  if(r.moquetteSale){
+    const roll=getRollById(r.rollId);
+    const available=roll?Math.max(0,num(roll.currentLength)-(sessionLines[type].filter((x,idx)=>x.rollId===r.rollId&&idx!==index).reduce((s,x)=>s+num(x.length),0))):num(r.sourceLength);
+    if(num(r.length)>available){alert(`Longueur insuffisante sur ce rouleau. Disponible: ${available} cm`);return;}
+    r.qty=1;
+    r.width=roll?num(roll.width):num(r.width);
+    r.sourceLength=available;
+    r.remainingLength=available-num(r.length);
+    r.sourceKey=keyOf(r.article,r.color,r.sourceLength,r.width);
+    r.stockIgnore=true;
+  }
+  r.key=keyOf(r.article,r.color,r.length,r.width);
+  r.total=surface(r.length,r.width,r.qty)*r.pm2;
+  $('edit-line-modal').style.display='none';
+  renderMovements();
+  notify('Ligne modifiee');
+});
+
+// â”€â”€â”€â”€â”€ CONFIRM SESSION â”€â”€â”€â”€â”€
+function confirmSession(type){
+  if(!sessionLines[type].length)return;
+  const titles={purchase:'Confirmer les achats',sale:'Confirmer les ventes',transfer:'Confirmer les transferts',inventory:'Confirmer les ajustements'};
+  const counts=sessionLines[type].length;
+  $('confirm-modal-title').textContent=titles[type];
+  $('confirm-modal-desc').textContent=`${counts} ligne(s) vont etre enregistrees definitivement.`;
+  let thead='',tbody='';
+  if(type==='purchase'){thead='<tr><th>#</th><th>Date</th><th>Fournisseur</th><th>Article</th><th>Couleur</th><th>Long.</th><th>Larg.</th><th>Qte</th><th>Total</th></tr>';tbody=sessionLines.purchase.map((r,i)=>`<tr><td>${i+1}</td><td>${r.date}</td><td>${r.supplier}</td><td>${r.article}</td><td>${r.color}</td><td>${r.length}</td><td>${r.width}</td><td>${r.qty}</td><td>${dh(r.total)}</td></tr>`).join('');}
+  else if(type==='sale'){thead='<tr><th>#</th><th>Date</th><th>Client</th><th>Article</th><th>Couleur</th><th>Long.</th><th>Larg.</th><th>Qte</th><th>Total</th></tr>';tbody=sessionLines.sale.map((r,i)=>`<tr><td>${i+1}</td><td>${r.date}</td><td>${r.client}</td><td>${r.article}</td><td>${r.color}</td><td>${r.length}</td><td>${r.width}</td><td>${r.qty}</td><td>${dh(r.total)}</td></tr>`).join('');}
+  else if(type==='transfer'){thead='<tr><th>#</th><th>Date</th><th>Article</th><th>Couleur</th><th>Long.</th><th>Larg.</th><th>Qte</th><th>De</th><th>Vers</th></tr>';tbody=sessionLines.transfer.map((r,i)=>`<tr><td>${i+1}</td><td>${r.date}</td><td>${r.article}</td><td>${r.color}</td><td>${r.length}</td><td>${r.width}</td><td>${r.qty}</td><td>${siteName(r.from)}</td><td>${siteName(r.to)}</td></tr>`).join('');}
+  else if(type==='inventory'){thead='<tr><th>#</th><th>Date</th><th>Article</th><th>Site</th><th>Couleur</th><th>Long.</th><th>Larg.</th><th>Ajust.</th></tr>';tbody=sessionLines.inventory.map((r,i)=>`<tr><td>${i+1}</td><td>${r.date}</td><td>${r.article}</td><td>${siteName(r.site)}</td><td>${r.color}</td><td>${r.length}</td><td>${r.width}</td><td>${r.adjust>0?'+'+r.adjust:r.adjust}</td></tr>`).join('');}
+  $('confirm-modal-thead').innerHTML=thead;
+  $('confirm-modal-tbody').innerHTML=tbody;
+  confirmCallback=function(){
+    if(type==='purchase')sessionLines.purchase.forEach(r=>{
+      db.purchases.push({id:uid('pur'),...r});
+      if(isMoquetteArticle(r.article)){
+        for(let i=0;i<intv(r.qty);i++){
+          db.rolls.push({
+            id:uid('roll'),
+            code:`ROL-${Date.now().toString().slice(-6)}-${i+1}-${db.rolls.length+1}`,
+            article:r.article,color:r.color,width:r.width,originalLength:r.length,currentLength:r.length,
+            site:r.site,purchaseDate:r.date,purchaseRef:r.id||'',status:'full',note:r.note||''
+          });
+        }
+      }
+    });
+    else if(type==='sale')sessionLines.sale.forEach(r=>{
+      if(r.moquetteSale){
+        db.sales.push({id:uid('sale'),...r});
+        db.inventories.push({id:uid('inv'),article:r.article,site:r.site,color:r.color,length:r.sourceLength,width:r.width,adjust:-1,date:r.date,note:`Sortie rouleau ${r.rollCode||r.rollId}`,key:keyOf(r.article,r.color,r.sourceLength,r.width)});
+        if(num(r.remainingLength)>0){
+          db.inventories.push({id:uid('inv'),article:r.article,site:r.site,color:r.color,length:r.remainingLength,width:r.width,adjust:1,date:r.date,note:`Reste rouleau ${r.rollCode||r.rollId}`,key:keyOf(r.article,r.color,r.remainingLength,r.width)});
+        }
+        const roll=getRollById(r.rollId);
+        if(roll){
+          roll.currentLength=Math.max(0,num(r.remainingLength));
+          roll.status=roll.currentLength>0?'partial':'sold';
+        }
+        db.rollCuts.push({id:uid('cut'),rollId:r.rollId,rollCode:r.rollCode||'',article:r.article,color:r.color,width:r.width,site:r.site,client:r.client,date:r.date,soldLength:r.length,previousLength:r.sourceLength,remainingLength:Math.max(0,num(r.remainingLength)),pm2:r.pm2,total:r.total,note:r.note||''});
+        return;
+      }
+      db.sales.push({id:uid('sale'),...r});
+    });
+    else if(type==='transfer')sessionLines.transfer.forEach(r=>db.transfers.push({id:uid('tr'),...r}));
+    else if(type==='inventory')sessionLines.inventory.forEach(r=>db.inventories.push({id:uid('inv'),...r}));
+    sessionLines[type]=[];
+    $('confirm-modal').style.display='none';
+    save();refresh();notify(`${counts} ligne(s) enregistree(s) avec succes !`);
+  };
+  $('confirm-modal').style.display='flex';
+}
+
+// â”€â”€â”€â”€â”€ CALCULATORS â”€â”€â”€â”€â”€
+function ensureMoquetteMovementFields(){
+  const saleGrid=$('mv-sale')?.querySelector('.form-grid.tight');
+  if(saleGrid&&!$('s-roll-wrap')){
+    const colorField=$('s-color')?.closest('.field');
+    colorField?.insertAdjacentHTML('afterend',`<div class="field" id="s-roll-wrap" style="display:none"><label>Rouleau ÃƒÂ  couper</label><select id="s-roll"><option value="">-- SÃƒÂ©lectionner rouleau --</option></select></div>`);
+    saleGrid.insertAdjacentHTML('beforeend',`<div id="s-roll-hint" class="full-col" style="display:none;font-size:12px;color:var(--mut);background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:10px 12px">Article Moquette: choisissez manuellement le rouleau ÃƒÂ  couper. La vente dÃƒÂ©duira ce rouleau et crÃƒÂ©era automatiquement le morceau restant en stock.</div>`);
+  }
+}
+function bindMovementCalculators(){
+  const purchaseCalc=()=>{
+    const supplier=$('p-supplier')?.value,article=$('p-article')?.value;
+    const l=num($('p-length')?.value),w=num($('p-width')?.value),q=intv($('p-qty')?.value);
+    if(supplier&&article){const p=entityPrice('supplier',supplier,article);if(p&&!$('p-pm2').value)$('p-pm2').value=p}
+    if($('p-surface'))$('p-surface').textContent=sqm(surface(l,w,q));
+    if($('p-total'))$('p-total').textContent=dh(surface(l,w,q)*num($('p-pm2')?.value));
+  };
+  ['p-supplier','p-article'].forEach(id=>$(id)?.addEventListener('change',purchaseCalc));
+  ['p-color','p-length','p-width','p-qty','p-pm2'].forEach(id=>$(id)?.addEventListener('input',purchaseCalc));
+  if($('p-date'))$('p-date').value=today();purchaseCalc();
+
+  // SALE: dynamic dropdowns
+  window.onSaleArticleChange=function(){
+    const article=$('s-article')?.value;
+    const colorSel=$('s-color');const dimSel=$('s-dim');
+    if(!colorSel||!dimSel)return;
+    // Get unique colors from stock for this article
+    const keys=stockRows().filter(r=>r.article===article&&globalQty(r.key)>0);
+    const colors=[...new Set(keys.map(r=>r.color))].filter(Boolean);
+    colorSel.innerHTML='<option value="">-- Selectionner couleur --</option>'+colors.map(c=>`<option value="${c}">${c}</option>`).join('');
+    dimSel.innerHTML='<option value="">-- Selectionner dim. --</option>';
+    $('s-length').value='';$('s-width').value='';
+    if($('s-stock-dispo'))$('s-stock-dispo').textContent='-';
+  };
+  window.onSaleColorChange=function(){
+    const article=$('s-article')?.value,color=$('s-color')?.value;
+    const dimSel=$('s-dim');if(!dimSel)return;
+    if(!article||!color){dimSel.innerHTML='<option value="">-- Selectionner dim. --</option>';return;}
+    const keys=stockRows().filter(r=>r.article===article&&r.color===color&&globalQty(r.key)>0);
+    dimSel.innerHTML='<option value="">-- Selectionner dim. --</option>'+keys.map(r=>{
+      const site=$('s-site')?.value;const q=site?stockQty(r.key,site):globalQty(r.key);
+      return`<option value="${r.length}|${r.width}">${r.length} x ${r.width} cm (stock: ${q})</option>`;
+    }).join('');
+    $('s-length').value='';$('s-width').value='';
+  };
+  window.onSaleDimChange=function(){
+    const val=$('s-dim')?.value;
+    if(!val){$('s-length').value='';$('s-width').value='';return;}
+    const[l,w]=val.split('|');
+    $('s-length').value=l;$('s-width').value=w;
+    // Update stock dispo
+    const article=$('s-article')?.value,color=$('s-color')?.value,site=$('s-site')?.value;
+    if(article&&color&&l&&w){
+      const key=keyOf(article,color,num(l),num(w));
+      const q=site?stockQty(key,site):globalQty(key);
+      if($('s-stock-dispo')){$('s-stock-dispo').textContent=q+' unités';$('s-stock-dispo').style.color=q>0?'var(--ok)':'var(--danger)';}
+    }
+    saleCalc();
+  };
+
+  // Bind sale dropdowns
+  $('s-article')?.addEventListener('change',()=>{onSaleArticleChange();saleCalc();});
+  $('s-color')?.addEventListener('change',()=>{onSaleColorChange();saleCalc();});
+  $('s-dim')?.addEventListener('change',()=>{onSaleDimChange();});
+  $('s-site')?.addEventListener('change',()=>{onSaleColorChange();saleCalc();});
+
+  const saleCalc=()=>{
+    const client=$('s-client')?.value,article=$('s-article')?.value;
+    const l=num($('s-length')?.value),w=num($('s-width')?.value),q=intv($('s-qty')?.value);
+    if(client&&article){const p=entityPrice('client',client,article);if(p&&!$('s-pm2').value)$('s-pm2').value=p}
+    if($('s-surface'))$('s-surface').textContent=sqm(surface(l,w,q));
+    if($('s-total-box'))$('s-total-box').textContent=dh(surface(l,w,q)*num($('s-pm2')?.value));
+  };
+  ['s-client'].forEach(id=>$(id)?.addEventListener('change',saleCalc));
+  ['s-length','s-qty','s-pm2'].forEach(id=>$(id)?.addEventListener('input',saleCalc));
+  if($('s-date'))$('s-date').value=today();saleCalc();
+
+  // Init sale article dropdowns if article already selected
+  if($('s-article')?.value)onSaleArticleChange();
+  if($('s-roll'))$('s-roll').addEventListener('change',()=>{if(window.onSaleRollChange)window.onSaleRollChange();});
+  if($('s-length'))$('s-length').addEventListener('input',()=>{if(isMoquetteArticle($('s-article')?.value))saleCalc();});
+
+  window.onSaleArticleChange=function(){
+    // Guard: si mode hors-stock actif, ne pas modifier les champs ni le readOnly
+    if($('s-hors-stock')?.checked){saleCalc();return;}
+    const article=$('s-article')?.value;
+    const colorSel=$('s-color'),dimSel=$('s-dim'),rollWrap=$('s-roll-wrap'),rollHint=$('s-roll-hint');
+    if(!colorSel||!dimSel)return;
+    const moquette=isMoquetteArticle(article);
+    if(rollWrap)rollWrap.style.display=moquette?'':'none';
+    if(rollHint)rollHint.style.display=moquette?'block':'none';
+    dimSel.closest('.field').style.display=moquette?'none':'';
+    $('s-length').value='';$('s-width').value='';
+    $('s-length').readOnly=!moquette;
+    $('s-length').style.background=moquette?'#fff':'#f0f4f9';
+    $('s-width').readOnly=true;
+    $('s-width').style.background='#f0f4f9';
+    $('s-qty').readOnly=moquette;
+    $('s-qty').style.background=moquette?'#f0f4f9':'#fff';
+    if(moquette){$('s-qty').value='1';if($('s-roll'))$('s-roll').innerHTML='<option value="">-- SÃƒÂ©lectionner rouleau --</option>';}
+    const colors=moquette
+      ? [...new Set(getAvailableRolls(article,'',$('s-site')?.value).map(r=>r.color))].filter(Boolean)
+      : [...new Set(stockRows().filter(r=>r.article===article&&globalQty(r.key)>0).map(r=>r.color))].filter(Boolean);
+    colorSel.innerHTML='<option value="">-- SÃƒÂ©lectionner couleur --</option>'+colors.map(c=>`<option value="${c}">${c}</option>`).join('');
+    dimSel.innerHTML='<option value="">-- SÃƒÂ©lectionner dim. --</option>';
+    if($('s-stock-dispo'))$('s-stock-dispo').textContent='Ã¢€â€';
+    saleCalc();
+  };
+  window.onSaleColorChange=function(){
+    const article=$('s-article')?.value,color=$('s-color')?.value,dimSel=$('s-dim');
+    if(!article||!color){if(dimSel)dimSel.innerHTML='<option value="">-- SÃƒÂ©lectionner dim. --</option>';if($('s-roll'))$('s-roll').innerHTML='<option value="">-- SÃƒÂ©lectionner rouleau --</option>';return;}
+    if(isMoquetteArticle(article)){
+      const rolls=getAvailableRolls(article,color,$('s-site')?.value);
+      if($('s-roll'))$('s-roll').innerHTML='<option value="">-- SÃƒÂ©lectionner rouleau --</option>'+rolls.map(r=>`<option value="${r.id}">${rollLabel(r)}</option>`).join('');
+      $('s-length').value='';$('s-width').value='';
+      if($('s-stock-dispo')){$('s-stock-dispo').textContent=`${rolls.length} rouleau(x) disponible(s)`;$('s-stock-dispo').style.color=rolls.length?'var(--ok)':'var(--danger)';}
+      saleCalc();
+      return;
+    }
+    const keys=stockRows().filter(r=>r.article===article&&r.color===color&&globalQty(r.key)>0);
+    if(dimSel)dimSel.innerHTML='<option value="">-- SÃƒÂ©lectionner dim. --</option>'+keys.map(r=>{const site=$('s-site')?.value;const q=site?stockQty(r.key,site):globalQty(r.key);return`<option value="${r.length}|${r.width}">${r.length} Ãƒ- ${r.width} cm (stock: ${q})</option>`;}).join('');
+    $('s-length').value='';$('s-width').value='';
+    saleCalc();
+  };
+  window.onSaleRollChange=function(){
+    const roll=getRollById($('s-roll')?.value);
+    if(!roll){$('s-width').value='';if($('s-stock-dispo'))$('s-stock-dispo').textContent='Ã¢€â€';return;}
+    const available=Math.max(0,num(roll.currentLength)-pendingRollUsage(roll.id));
+    $('s-width').value=roll.width;
+    if($('s-stock-dispo')){$('s-stock-dispo').textContent=`Reste ${available} cm sur ${roll.code||roll.id}`;$('s-stock-dispo').style.color=available>0?'var(--ok)':'var(--danger)';}
+    saleCalc();
+  };
+  if($('s-article')?.value)window.onSaleArticleChange();
+
+  const transferCalc=()=>{const l=num($('t-length')?.value),w=num($('t-width')?.value),q=intv($('t-qty')?.value);if($('t-surface'))$('t-surface').textContent=sqm(surface(l,w,q))};
+  ['t-article','t-color','t-length','t-width','t-qty'].forEach(id=>$(id)?.addEventListener('input',transferCalc));
+  if($('t-date'))$('t-date').value=today();transferCalc();
+}
+function bindInvCalculators(){
+  const invCalc=()=>{const l=num($('i-length')?.value),w=num($('i-width')?.value),q=intv($('i-adjust')?.value);if($('i-surface'))$('i-surface').textContent=sqm(surface(l,w,Math.abs(q)))};
+  ['i-article','i-color','i-length','i-width','i-adjust'].forEach(id=>$(id)?.addEventListener('input',invCalc));
+  if($('i-date'))$('i-date').value=today();invCalc();
+}
+function bindAccountTools(){
+  ['client','supplier'].forEach(type=>{
+    const dateEl=$(type+'-pay-date');if(dateEl)dateEl.value=today();
+    [type+'-pay-date',type+'-pay-days',type+'-pay-mode'].forEach(id=>$(id)?.addEventListener('input',()=>syncDue(type)));
+    syncDue(type);
+  });
+}
+function syncDue(type){
+  const mode=$(type+'-pay-mode')?.value,date=$(type+'-pay-date')?.value,days=intv($(type+'-pay-days')?.value);
+  if((mode==='LC'||mode==='Cheque')&&date){const d=new Date(date);d.setDate(d.getDate()+days);$(type+'-pay-due').value=d.toISOString().slice(0,10)}
+  else if($(type+'-pay-due'))$(type+'-pay-due').value='';
+}
+
+// â”€â”€â”€â”€â”€ PRINT ACCOUNT â”€â”€â”€â”€â”€
+function togglePrintOptions(type){
+  const el=document.getElementById(type+'-print-options');
+  if(el)el.style.display=el.style.display==='none'?'block':'none';
+}
+function printAccount(type){
+  const name=view[type+'Account'];
+  if(!name)return alert('Veuillez sélectionner un '+( type==='client'?'client':'fournisseur'));
+  const sum=accountSummary(type,name);
+  const entity=(type==='client'?db.clients:db.suppliers).find(x=>x.name===name);
+
+  // ── Options d'impression ──
+  const fromVal=$(type+'-print-from')?.value||'';
+  const toVal=$(type+'-print-to')?.value||'';
+  const hidePm2=$(type+'-print-hide-pm2')?.checked||false;
+
+  // Filtrer les opérations par période
+  const filteredOps=sum.ops.filter(x=>{
+    if(!x.date)return true;
+    if(fromVal&&x.date<fromVal)return false;
+    if(toVal&&x.date>toVal)return false;
+    return true;
+  });
+  // Filtrer les paiements par période
+  const filteredPay=sum.payments.filter(p=>{
+    if(!p.date)return true;
+    if(fromVal&&p.date<fromVal)return false;
+    if(toVal&&p.date>toVal)return false;
+    return true;
+  });
+
+  const totalOpsFiltered=filteredOps.reduce((s,x)=>s+num(x.total),0);
+  const totalPayFiltered=filteredPay.reduce((s,p)=>{
+    if(p.deductNow===false){return p.paidStatus==='paid'?s+num(p.amount):s;}
+    return s+num(p.amount);
+  },0);
+
+  // Label période
+  const periodLabel=fromVal||toVal
+    ?`${fromVal||'début'} → ${toVal||'aujourd\'hui'}`
+    :'Toutes les dates';
+
+  // Construire les lignes opérations
+  const opsRows=filteredOps.map((x,i)=>{
+    const dimCell=`${x.length||0} x ${x.width||0} cm`;
+    const pm2Cell=hidePm2?'':`<td>${dh(x.pm2)}/m²</td>`;
+    const colspan=hidePm2?9:10;
+    return`<tr>
+      <td>${i+1}</td><td>${x.date}</td><td>${x.article}</td>
+      <td>${x.color||'-'}</td><td>${dimCell}</td>
+      <td>${siteName(x.site)}</td><td>${x.qty}</td>
+      <td>${sqm(surface(x.length,x.width,x.qty))}</td>
+      ${pm2Cell}
+      <td>${dh(x.total)}</td>
+    </tr>`;
+  }).join('')||`<tr><td colspan="${hidePm2?9:10}" style="text-align:center;color:#9ca3af;padding:12px">Aucune opération sur cette période</td></tr>`;
+
+  const payRows=filteredPay.map((p,i)=>`<tr>
+    <td>${i+1}</td><td>${p.date}</td><td>${dh(p.amount)}</td>
+    <td>${p.mode}</td><td>${p.due||'-'}</td>
+    <td>${paymentStatus(p)}</td><td>${p.note||'-'}</td>
+  </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:12px">Aucun paiement sur cette période</td></tr>';
+
+  // En-têtes opérations (avec ou sans prix m²)
+  const opsHead=hidePm2
+    ?'<th>#</th><th>Date</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Site</th><th>Qté</th><th>Surface</th><th>Total</th>'
+    :'<th>#</th><th>Date</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Site</th><th>Qté</th><th>Surface</th><th>Prix m²</th><th>Total</th>';
+  const opsTotalColspan=hidePm2?8:9;
+
+  const w=window.open('','_blank','width=1200,height=800');if(!w)return;
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${name} - ${periodLabel}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;padding:24px;color:#111;font-size:13px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #1a56db}
+.header-left h1{font-size:20px;font-weight:700;color:#1a56db;margin-bottom:2px}
+.header-left p{font-size:12px;color:#6b7280}
+.header-right{text-align:right;font-size:11px;color:#6b7280;line-height:1.7}
+.period-badge{display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;margin-top:4px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+.card{border:1px solid #e5e7eb;padding:12px;border-radius:10px;background:#f9fafb}
+.card.green{border-color:#6ee7b7;background:#ecfdf5}
+.card.red{border-color:#fca5a5;background:#fef2f2}
+.k{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;font-weight:600}
+.v{font-size:20px;font-weight:700;margin-top:5px}
+h2{font-size:14px;font-weight:700;margin:20px 0 8px;display:flex;align-items:center;gap:8px}
+h2 span{font-size:11px;font-weight:400;color:#6b7280}
+table{width:100%;border-collapse:collapse;margin-top:6px}
+th{background:#f8fafc;padding:8px 10px;text-align:left;border:1px solid #e5e7eb;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280}
+td{border:1px solid #e5e7eb;padding:7px 10px;font-size:12px;vertical-align:middle}
+tfoot td{background:#f0fdf4;font-weight:700}
+tr:nth-child(even) td{background:#fafafa}
+.footer{margin-top:24px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af;text-align:center}
+@media print{
+  body{padding:12px}
+  .cards{grid-template-columns:repeat(4,1fr)}
+  th{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .card{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style></head><body>
+<div class="header">
+  <div class="header-left">
+    <h1>${type==='client'?'Compte client':'Compte fournisseur'} — ${name}</h1>
+    <p>Ville : ${entity?.city||'-'}</p>
+    <div class="period-badge">📅 Période : ${periodLabel}</div>
+  </div>
+  <div class="header-right">
+    Imprimé le ${new Date().toLocaleDateString('fr-MA',{day:'2-digit',month:'long',year:'numeric'})}<br>
+    à ${new Date().toLocaleTimeString('fr-MA')}<br>
+    ${hidePm2?'<span style="color:#d97706;font-weight:600">Prix m² masqué</span>':''}
+  </div>
+</div>
+
+<div class="cards">
+  <div class="card"><div class="k">Solde initial</div><div class="v">${dh(sum.init)}</div></div>
+  <div class="card"><div class="k">Opérations (période)</div><div class="v">${dh(totalOpsFiltered)}</div></div>
+  <div class="card"><div class="k">Paiements (période)</div><div class="v">${dh(totalPayFiltered)}</div></div>
+  <div class="card ${sum.balance>0?'green':'red'}">
+    <div class="k">Solde global restant</div>
+    <div class="v" style="color:${sum.balance>0?'#059669':'#dc2626'}">${dh(sum.balance)}</div>
+  </div>
+</div>
+
+<h2>Opérations <span>(${filteredOps.length} ligne(s)${fromVal||toVal?' — période filtrée':''})</span></h2>
+<table>
+  <thead><tr>${opsHead}</tr></thead>
+  <tbody>${opsRows}</tbody>
+  <tfoot>
+    <tr>
+      <td colspan="${opsTotalColspan}"><strong>TOTAL OPÉRATIONS</strong></td>
+      <td><strong>${dh(totalOpsFiltered)}</strong></td>
+    </tr>
+  </tfoot>
+</table>
+
+<h2>Paiements <span>(${filteredPay.length} ligne(s)${fromVal||toVal?' — période filtrée':''})</span></h2>
+<table>
+  <thead><tr><th>#</th><th>Date</th><th>Montant</th><th>Mode</th><th>Échéance</th><th>Statut</th><th>Remarque</th></tr></thead>
+  <tbody>${payRows}</tbody>
+  <tfoot>
+    <tr>
+      <td colspan="2"><strong>TOTAL PAIEMENTS</strong></td>
+      <td><strong>${dh(totalPayFiltered)}</strong></td>
+      <td colspan="4"></td>
+    </tr>
+  </tfoot>
+</table>
+
+<div class="footer">GestStock ERP — Document généré le ${new Date().toLocaleDateString('fr-MA')} à ${new Date().toLocaleTimeString('fr-MA')} | Période : ${periodLabel}</div>
+<script>window.onload=function(){window.print();}<\/script>
+</body></html>`);
+  w.document.close();
+  // Fermer le panel après impression
+  document.getElementById(type+'-print-options').style.display='none';
+}
+
+// â”€â”€â”€â”€â”€ REFRESH â”€â”€â”€â”€â”€
+function refresh(){
+  renderDatabase();
+  renderMovements();
+  renderInventoryImport();
+  renderAccounts();
+  renderStock();
+  renderAnalytics();
+  // renderBenefice removed - module supprimé
+  updateMetrics();
+  sanitizeVisibleText();
+  save();
+}
+
+// â”€â”€â”€â”€â”€ STATIC EVENTS â”€â”€â”€â”€â”€
+function bindStaticEvents(){
+  // Tab navigation
+  document.addEventListener('click',e=>{
+    if(e.target.matches('.tab-btn[data-main]')){
+      document.querySelectorAll('.tab-btn[data-main]').forEach(b=>b.classList.remove('active'));
+      e.target.classList.add('active');
+      document.querySelectorAll('.module').forEach(m=>m.classList.remove('active'));
+      $('mod-'+e.target.dataset.main).classList.add('active');
+    }
+    if(e.target.matches('.sub-btn[data-panel]')){
+      const wrap=e.target.closest('.module');
+      wrap.querySelectorAll('.sub-btn').forEach(b=>b.classList.remove('active'));
+      e.target.classList.add('active');
+      wrap.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      $(e.target.dataset.panel).classList.add('active');
+    }
+  });
+
+  // Modals
+  $('confirm-modal-ok').addEventListener('click',()=>{if(confirmCallback)confirmCallback();});
+  $('confirm-modal-cancel').addEventListener('click',()=>{$('confirm-modal').style.display='none';});
+
+  // Reset
+  $('reset-app').addEventListener('click',()=>{
+    if(confirm('⚠ Supprimer TOUTES les donnees ? Cette action est irreversible.\n\nConseil : Exportez une sauvegarde avant (bouton Remise a zero â†’ Exporter sauvegarde).'))
+    {CKEYS.forEach(k=>db[k]=[]);sessionLines={purchase:[],sale:[],transfer:[],inventory:[]};edit={article:-1,client:-1,supplier:-1,site:-1,cp:-1,sp:-1};initDefaults();refresh();notify('Application reinitialisee');}
+  });
+
+  // KPI toggle
+  $('toggle-dashboard').addEventListener('click',()=>{
+    const d=$('dashboard-wrap');
+    d.style.display=d.style.display==='none'?'grid':'none';
+  });
+
+  // Restore modal
+  $('btn-reset-stock-modal').addEventListener('click',()=>{openResetStockModal();});
+
+  // Close modals on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(m=>{
+    m.addEventListener('click',e=>{if(e.target===m)m.style.display='none';});
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){document.querySelectorAll('.modal-overlay').forEach(m=>m.style.display='none');}
+  });
+}
+
+function initDefaults(){
+  if(!db.sites.length){
+    db.sites.push({id:uid('site'),name:'Magasin Central',city:'Casablanca'},{id:uid('site'),name:'Point de Vente',city:'Rabat'});
+  }
+}
+
+// Expose to global
+window.saveArticle=saveArticle;window.saveClient=saveClient;window.saveSupplier=saveSupplier;window.saveSite=saveSite;
+window.saveClientPrice=saveClientPrice;window.saveSupplierPrice=saveSupplierPrice;
+window.savePurchase=savePurchase;window.saveSale=saveSale;window.saveTransfer=saveTransfer;window.saveInventory=saveInventory;
+window.saveAccountPayment=saveAccountPayment;
+window.editArticle=editArticle;window.editClientRow=editClientRow;window.editSupplierRow=editSupplierRow;window.editSiteRow=editSiteRow;
+window.editClientPrice=editClientPrice;window.editSupplierPrice=editSupplierPrice;
+window.removeRow=removeRow;window.removeSite=removeSite;window.clearForm=clearForm;window.clearFormMv=clearFormMv;window.clearFormInv=clearFormInv;
+window.removeSessionLine=removeSessionLine;window.confirmSession=confirmSession;
+window.setAccountView=setAccountView;window.printAccount=printAccount;window.togglePrintOptions=togglePrintOptions;
+window.importExcelInventaire=importExcelInventaire;window.confirmExcelInventaire=confirmExcelInventaire;window.cancelExcelInventaire=cancelExcelInventaire;
+window.exportBackup=exportBackup;window.openResetStockModal=openResetStockModal;window.applyResetStock=applyResetStock;
+window.openEditLine=openEditLine;window.renderAnalytics=renderAnalytics;
+window.renderBenefice=renderBenefice;
+
+// â”€â”€â”€â”€â”€ BENEFICE â”€â”€â”€â”€â”€
+let beneficePeriod=30;
+
+// â”€â”€ Helper global cout m²
+function coutPm2(article,length,width){
+  const sp=db.supplierPrices.find(p=>p.article===article);
+  if(sp)return num(sp.pm2);
+  const achats=db.purchases.filter(p=>p.article===article&&num(p.length)===num(length)&&num(p.width)===num(width));
+  if(achats.length)return achats.reduce((s,x)=>s+num(x.pm2),0)/achats.length;
+  const all=db.purchases.filter(p=>p.article===article);
+  if(!all.length)return 0;
+  return all.reduce((s,x)=>s+num(x.pm2),0)/all.length;
+}
+function coutUnitaire(article,length,width){return coutPm2(article,length,width)*surface(length,width,1);}
+
+function calcLignes(periodeJours){
+  const ventes=db.sales.filter(s=>!periodeJours||dateInPeriod(s.date,periodeJours));
+  return ventes.map(s=>{
+    const pmA=coutPm2(s.article,s.length,s.width);
+    const coutTotal=pmA*surface(s.length,s.width,intv(s.qty));
+    const caTotal=num(s.total);
+    const marge=caTotal-coutTotal;
+    const txMarge=caTotal>0?((marge/caTotal)*100):0;
+    const surf=surface(s.length,s.width,intv(s.qty));
+    const pmV=surf>0?caTotal/surf:0;
+    return{...s,pmA,pmV,coutTotal,caTotal,marge,txMarge,surf};
+  });
+}
+
+function renderBenefice(){/* Module Bénéfice supprimé */}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// IMPRESSION PDF COMPLET - PROFESSIONNEL
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+window.printBeneficeComplet=function(){
+  const p=beneficePeriod;
+  const periodLabel={7:'7 jours',30:'30 jours',90:'3 mois',180:'6 mois',365:'1 an',0:'Tout'};
+  const periodName=periodLabel[p]||'Tout';
+  const lignes=calcLignes(p);
+
+  const totalCA=lignes.reduce((s,x)=>s+x.caTotal,0);
+  const totalCout=lignes.reduce((s,x)=>s+x.coutTotal,0);
+  const totalMarge=totalCA-totalCout;
+  const tx=totalCA>0?((totalMarge/totalCA)*100).toFixed(1):0;
+
+  // By article
+  const byArt={};
+  lignes.forEach(l=>{if(!byArt[l.article])byArt[l.article]={a:l.article,ca:0,cout:0,mg:0,qty:0,n:0,pvs:0,pas:0};byArt[l.article].ca+=l.caTotal;byArt[l.article].cout+=l.coutTotal;byArt[l.article].mg+=l.marge;byArt[l.article].qty+=intv(l.qty);byArt[l.article].n++;byArt[l.article].pvs+=l.pmV;byArt[l.article].pas+=l.pmA;});
+  const artR=Object.values(byArt).sort((a,b)=>b.mg-a.mg);
+
+  // By client
+  const byCli={};
+  lignes.forEach(l=>{if(!byCli[l.client])byCli[l.client]={c:l.client,ca:0,cout:0,mg:0,n:0};byCli[l.client].ca+=l.caTotal;byCli[l.client].cout+=l.coutTotal;byCli[l.client].mg+=l.marge;byCli[l.client].n++;});
+  const cliR=Object.values(byCli).sort((a,b)=>b.mg-a.mg);
+
+  // By month
+  const byMo={};
+  lignes.forEach(l=>{const m=l.date?l.date.slice(0,7):'??';if(!byMo[m])byMo[m]={m,ca:0,cout:0,mg:0,n:0};byMo[m].ca+=l.caTotal;byMo[m].cout+=l.coutTotal;byMo[m].mg+=l.marge;byMo[m].n++;});
+  const moR=Object.values(byMo).sort((a,b)=>b.m.localeCompare(a.m));
+
+  const fmt=v=>num(v).toLocaleString('fr-MA',{minimumFractionDigits:2,maximumFractionDigits:2})+' DH';
+  const pct=(mg,ca)=>ca>0?((mg/ca)*100).toFixed(1)+'%':'-';
+  const clr=mg=>mg>=0?'#059669':'#dc2626';
+
+  const rowsDetail=lignes.map((r,i)=>{const t=r.caTotal>0?((r.marge/r.caTotal)*100).toFixed(1):0;return`<tr><td>${i+1}</td><td>${r.date}</td><td>${r.client}</td><td>${r.article}</td><td>${r.color||'-'}</td><td>${r.length||0}x${r.width||0}</td><td>${r.qty}</td><td>${fmt(r.pmV)}</td><td>${fmt(r.pmA)}</td><td>${fmt(r.pmV-r.pmA)}</td><td>${fmt(r.caTotal)}</td><td>${fmt(r.coutTotal)}</td><td style="color:${clr(r.marge)};font-weight:700">${fmt(r.marge)}</td><td>${t}%</td></tr>`}).join('');
+  const rowsArt=artR.map((r,i)=>{const pv=r.n?r.pvs/r.n:0;const pa=r.n?r.pas/r.n:0;return`<tr><td>${i+1}</td><td>${r.a}</td><td>${r.qty}</td><td>${r.n}</td><td>${fmt(pv)}</td><td>${fmt(pa)}</td><td>${fmt(r.ca)}</td><td>${fmt(r.cout)}</td><td style="color:${clr(r.mg)};font-weight:700">${fmt(r.mg)}</td><td>${pct(r.mg,r.ca)}</td></tr>`}).join('');
+  const rowsCli=cliR.map((r,i)=>`<tr><td>${i+1}</td><td>${r.c}</td><td>${r.n}</td><td>${fmt(r.ca)}</td><td>${fmt(r.cout)}</td><td style="color:${clr(r.mg)};font-weight:700">${fmt(r.mg)}</td><td>${pct(r.mg,r.ca)}</td><td>${r.mg>=0?'✅ Rentable':'âŒ Perte'}</td></tr>`).join('');
+  const rowsMo=moR.map(r=>`<tr><td>${r.m}</td><td>${r.n}</td><td>${fmt(r.ca)}</td><td>${fmt(r.cout)}</td><td style="color:${clr(r.mg)};font-weight:700">${fmt(r.mg)}</td><td>${pct(r.mg,r.ca)}</td></tr>`).join('');
+
+  const w=window.open('','_blank','width=1300,height=900');if(!w)return;
+  w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Rapport Benefice - GestStock ERP</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;color:#111;background:#fff;padding:32px;font-size:13px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #1a56db}
+.header h1{font-size:24px;font-weight:700;color:#1a56db}
+.header p{font-size:12px;color:#6b7280;margin-top:4px}
+.meta{text-align:right;font-size:11px;color:#6b7280}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
+.kpi{border-radius:10px;padding:14px;color:#fff}
+.kpi.green{background:linear-gradient(135deg,#059669,#047857)}
+.kpi.red{background:linear-gradient(135deg,#dc2626,#b91c1c)}
+.kpi.blue{background:linear-gradient(135deg,#1a56db,#7c3aed)}
+.kpi.purple{background:linear-gradient(135deg,#7c3aed,#5b21b6)}
+.kpi .k{font-size:10px;opacity:.75;text-transform:uppercase;letter-spacing:.08em}
+.kpi .v{font-size:22px;font-weight:700;margin-top:5px}
+.bars{border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px}
+.bar-row{margin-bottom:10px}
+.bar-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+.bar-track{background:#f3f4f6;border-radius:999px;height:8px;overflow:hidden}
+.bar-fill{height:100%;border-radius:999px}
+.interp{border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;line-height:1.7}
+.section-title{font-size:15px;font-weight:700;margin:24px 0 10px;padding-bottom:6px;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;gap:8px}
+table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12px}
+th{background:#f8fafc;padding:8px 10px;text-align:left;border:1px solid #e5e7eb;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280}
+td{border:1px solid #e5e7eb;padding:7px 10px;vertical-align:middle}
+tfoot td{background:#f0fdf4;font-weight:700}
+tr:nth-child(even) td{background:#fafafa}
+.pos{color:#059669;font-weight:700}
+.neg{color:#dc2626;font-weight:700}
+.footer{margin-top:28px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;text-align:center}
+@media print{body{padding:16px}.kpis{grid-template-columns:repeat(4,1fr)}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}.kpi{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body>
+
+<div class="header">
+  <div>
+    <h1>Rapport Benefice - GestStock ERP V6</h1>
+    <p>Analyse de rentabilite - Periode : <strong>${periodName}</strong></p>
+  </div>
+  <div class="meta">
+    Genere le ${new Date().toLocaleDateString('fr-MA',{day:'2-digit',month:'long',year:'numeric'})}<br>
+    ${lignes.length} transaction(s) analysee(s)
+  </div>
+</div>
+
+<div class="kpis">
+  <div class="kpi green"><div class="k">Chiffre d'affaires</div><div class="v">${fmt(totalCA)}</div></div>
+  <div class="kpi red"><div class="k">Cout d'achat total</div><div class="v">${fmt(totalCout)}</div></div>
+  <div class="kpi ${totalMarge>=0?'blue':'red'}"><div class="k">Bénéfice net</div><div class="v">${fmt(totalMarge)}</div></div>
+  <div class="kpi purple"><div class="k">Taux de marge</div><div class="v">${tx}%</div></div>
+</div>
+
+<div class="bars">
+  <div class="bar-row"><div class="bar-label"><span>Chiffre d'affaires</span><strong>${fmt(totalCA)}</strong></div><div class="bar-track"><div class="bar-fill" style="width:100%;background:linear-gradient(90deg,#059669,#34d399)"></div></div></div>
+  <div class="bar-row"><div class="bar-label"><span>Coût d'achat</span><strong>${fmt(totalCout)}</strong></div><div class="bar-track"><div class="bar-fill" style="width:${totalCA>0?Math.min(100,(totalCout/totalCA*100).toFixed(0)):0}%;background:linear-gradient(90deg,#dc2626,#f87171)"></div></div></div>
+  <div class="bar-row"><div class="bar-label"><span>Bénéfice</span><strong style="color:${clr(totalMarge)}">${fmt(totalMarge)}</strong></div><div class="bar-track"><div class="bar-fill" style="width:${totalCA>0?Math.min(100,Math.max(0,(totalMarge/totalCA*100).toFixed(0))):0}%;background:linear-gradient(90deg,#1a56db,#7c3aed)"></div></div></div>
+</div>
+
+<div class="interp" style="background:${num(tx)>=20?'#ecfdf5':num(tx)>=10?'#fffbeb':'#fef2f2'};border:1px solid ${num(tx)>=20?'#6ee7b7':num(tx)>=10?'#fde68a':'#fca5a5'}">
+  <strong>${num(tx)>=20?'✅ Bonne sante financiere':num(tx)>=10?'⚠ Marge a ameliorer':'âŒ Marge insuffisante'}</strong><br>
+  ${num(tx)>=20?`Votre taux de marge de ${tx}% est excellent. Bénéfice net de ${fmt(totalMarge)} sur un CA de ${fmt(totalCA)}.`:num(tx)>=10?`Taux de marge de ${tx}% correct mais améliorable. Négociez vos prix fournisseurs ou ajustez vos tarifs sur les articles à forte rotation.`:`Taux de marge de ${tx}% insuffisant. Vérifiez vos prix fournisseurs dans la base et revoyez votre politique tarifaire.`}
+</div>
+
+<!-- PAR ARTICLE -->
+<div class="section-title">Benefice par Article</div>
+<table>
+  <thead><tr><th>#</th><th>Article</th><th>Qte</th><th>Ventes</th><th>Px vente/m²</th><th>Px achat/m²</th><th>CA</th><th>Cout</th><th>Benefice</th><th>Marge%</th></tr></thead>
+  <tbody>${rowsArt||'<tr><td colspan="10" style="text-align:center;color:#9ca3af">Aucune donnee</td></tr>'}</tbody>
+  <tfoot><tr><td colspan="6">TOTAL</td><td>${fmt(totalCA)}</td><td>${fmt(totalCout)}</td><td class="${totalMarge>=0?'pos':'neg'}">${fmt(totalMarge)}</td><td>${tx}%</td></tr></tfoot>
+</table>
+
+<!-- PAR CLIENT -->
+<div class="section-title">Benefice par Client</div>
+<table>
+  <thead><tr><th>#</th><th>Client</th><th>Nb ventes</th><th>CA</th><th>Cout</th><th>Benefice</th><th>Marge%</th><th>Statut</th></tr></thead>
+  <tbody>${rowsCli||'<tr><td colspan="8" style="text-align:center;color:#9ca3af">Aucune donnee</td></tr>'}</tbody>
+  <tfoot><tr><td colspan="3">TOTAL</td><td>${fmt(totalCA)}</td><td>${fmt(totalCout)}</td><td class="${totalMarge>=0?'pos':'neg'}">${fmt(totalMarge)}</td><td>${tx}%</td><td></td></tr></tfoot>
+</table>
+
+<!-- PAR MOIS -->
+<div class="section-title">Benefice par Mois</div>
+<table>
+  <thead><tr><th>Mois</th><th>Nb ventes</th><th>CA</th><th>Cout</th><th>Benefice</th><th>Marge%</th></tr></thead>
+  <tbody>${rowsMo||'<tr><td colspan="6" style="text-align:center;color:#9ca3af">Aucune donnee</td></tr>'}</tbody>
+  <tfoot><tr><td>TOTAL</td><td>${lignes.length}</td><td>${fmt(totalCA)}</td><td>${fmt(totalCout)}</td><td class="${totalMarge>=0?'pos':'neg'}">${fmt(totalMarge)}</td><td>${tx}%</td></tr></tfoot>
+</table>
+
+<!-- DETAIL LIGNE PAR LIGNE -->
+<div class="section-title">Detail Ligne par Ligne</div>
+<table>
+  <thead><tr><th>#</th><th>Date</th><th>Client</th><th>Article</th><th>Couleur</th><th>Dim.</th><th>Qte</th><th>Px vente/m²</th><th>Px achat/m²</th><th>Ecart/m²</th><th>CA</th><th>Cout</th><th>Benefice</th><th>Marge%</th></tr></thead>
+  <tbody>${rowsDetail||'<tr><td colspan="14" style="text-align:center;color:#9ca3af">Aucune donnee</td></tr>'}</tbody>
+  <tfoot><tr><td colspan="10">TOTAL (${lignes.length} lignes)</td><td>${fmt(totalCA)}</td><td>${fmt(totalCout)}</td><td class="${totalMarge>=0?'pos':'neg'}">${fmt(totalMarge)}</td><td>${tx}%</td></tr></tfoot>
+</table>
+
+<div class="footer">GestStock ERP V6 - Rapport genere automatiquement le ${new Date().toLocaleDateString('fr-MA')} a ${new Date().toLocaleTimeString('fr-MA')}</div>
+<script>window.onload=()=>window.print();<\/script>
+</body></html>`);
+  w.document.close();
+};
+
+// Alias ancien nom pour compatibilite
+window.printBenefice=window.printBeneficeComplet;
+
+function bindEffectAndDueModals(){
+  // Effect modal buttons
+  $('effect-deduct-now')?.addEventListener('click',()=>{
+    if(!pendingPayment)return;
+    doSavePayment({...pendingPayment,deductNow:true});
+    pendingPayment=null;$('effect-modal').style.display='none';
+  });
+  $('effect-wait-due')?.addEventListener('click',()=>{
+    if(!pendingPayment)return;
+    doSavePayment({...pendingPayment,deductNow:false});
+    pendingPayment=null;$('effect-modal').style.display='none';
+  });
+  $('effect-cancel')?.addEventListener('click',()=>{pendingPayment=null;$('effect-modal').style.display='none';});
+
+  // Due modal buttons
+  let currentDuePaymentId=null;
+  $('due-modal-paid')?.addEventListener('click',()=>{
+    if(currentDuePaymentId){const p=db.payments.find(x=>x.id===currentDuePaymentId);if(p){p.paidStatus='paid';save();refresh();}}
+    $('due-modal').style.display='none';checkDuePayments();
+  });
+  $('due-modal-unpaid')?.addEventListener('click',()=>{
+    if(currentDuePaymentId){const p=db.payments.find(x=>x.id===currentDuePaymentId);if(p){p.paidStatus='unpaid';save();refresh();}}
+    $('due-modal').style.display='none';checkDuePayments();
+  });
+  $('due-modal-later')?.addEventListener('click',()=>{$('due-modal').style.display='none';});
+
+  // Check due payments on load
+  function checkDuePayments(){
+    const today_=new Date();today_.setHours(0,0,0,0);
+    // Find payments with due date today or passed, deductNow=false, no paidStatus yet
+    const due=db.payments.filter(p=>{
+      if(p.deductNow!==false)return false;
+      if(p.paidStatus)return false; // already answered
+      if(!p.due)return false;
+      const d=new Date(p.due);d.setHours(0,0,0,0);
+      return d<=today_;
+    });
+    if(!due.length)return;
+    const p=due[0];
+    currentDuePaymentId=p.id;
+    const entity=p.type==='client'?'Client':'Fournisseur';
+    $('due-modal-desc').textContent=`Un paiement de ${p.name} est arrive a echeance.`;
+    $('due-modal-detail').innerHTML=`
+      <strong>${entity} :</strong> ${p.name}<br>
+      <strong>Montant :</strong> ${dh(p.amount)}<br>
+      <strong>Mode :</strong> ${p.mode}<br>
+      <strong>Date effet :</strong> ${p.date}<br>
+      <strong>Echeance :</strong> ${p.due}<br>
+      <strong>Remarque :</strong> ${p.note||'-'}`;
+    setTimeout(()=>$('due-modal').style.display='flex',800);
+  }
+  window._checkDuePayments=checkDuePayments;
+  setTimeout(checkDuePayments,1200);
+}
+
+
+bindStaticEvents();
+bindEffectAndDueModals();
+load();
+initDefaults();
+refresh();
+</script>
+</body>
+</html>
+
