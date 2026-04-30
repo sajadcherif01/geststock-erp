@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updatedAt": "2026-04-30T18:32:27.138Z",
+  "updatedAt": "2026-04-30T18:35:42.660Z",
   "users": [
     {
       "id": "u-admin",
@@ -70,7 +70,38 @@
         "city": "Casablanca"
       }
     ],
-    "purchases": [],
+    "purchases": [
+      {
+        "id": "pur-1777573991686-luiam",
+        "supplier": "Rugessa",
+        "article": "Luna",
+        "site": "site-1777573904671-9hq71",
+        "color": "Biege",
+        "length": 300,
+        "width": 200,
+        "qty": 20,
+        "pm2": 157,
+        "date": "2026-04-30",
+        "note": "",
+        "key": "Luna|Biege|300|200",
+        "total": 18840
+      },
+      {
+        "id": "pur-1777574140875-mysls",
+        "supplier": "Rugessa",
+        "article": "Topas",
+        "site": "site-1777573904671-9hq71",
+        "color": "White",
+        "length": 2000,
+        "width": 200,
+        "qty": 1,
+        "pm2": 170,
+        "date": "2026-04-30",
+        "note": "",
+        "key": "Topas|White|2000|200",
+        "total": 6800
+      }
+    ],
     "sales": [],
     "transfers": [],
     "inventories": [],
@@ -103,7 +134,22 @@
       }
     ],
     "payments": [],
-    "rolls": [],
+    "rolls": [
+      {
+        "id": "roll-1777574140875-gn042",
+        "code": "ROL-140875-1-1",
+        "article": "Topas",
+        "color": "White",
+        "width": 200,
+        "originalLength": 2000,
+        "currentLength": 2000,
+        "site": "site-1777573904671-9hq71",
+        "purchaseDate": "2026-04-30",
+        "purchaseRef": "",
+        "status": "full",
+        "note": ""
+      }
+    ],
     "rollCuts": []
   }
 }
