@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updatedAt": "2026-04-30T18:35:42.660Z",
+  "updatedAt": "2026-04-30T18:37:01.896Z",
   "users": [
     {
       "id": "u-admin",
@@ -102,9 +102,57 @@
         "total": 6800
       }
     ],
-    "sales": [],
+    "sales": [
+      {
+        "id": "sale-1777574219016-walvk",
+        "client": "Firas",
+        "article": "Topas",
+        "site": "site-1777573904671-9hq71",
+        "color": "White",
+        "length": 310,
+        "width": 200,
+        "qty": 1,
+        "pm2": 220,
+        "date": "2026-04-30",
+        "note": "",
+        "key": "Topas|White|310|200",
+        "total": 1364,
+        "moquetteSale": true,
+        "stockIgnore": true,
+        "rollId": "roll-1777574140875-gn042",
+        "rollCode": "ROL-140875-1-1",
+        "sourceLength": 2000,
+        "remainingLength": 1690,
+        "sourceKey": "Topas|White|2000|200"
+      }
+    ],
     "transfers": [],
-    "inventories": [],
+    "inventories": [
+      {
+        "id": "inv-1777574219016-jk05f",
+        "article": "Topas",
+        "site": "site-1777573904671-9hq71",
+        "color": "White",
+        "length": 2000,
+        "width": 200,
+        "adjust": -1,
+        "date": "2026-04-30",
+        "note": "Sortie rouleau ROL-140875-1-1",
+        "key": "Topas|White|2000|200"
+      },
+      {
+        "id": "inv-1777574219016-t0n78",
+        "article": "Topas",
+        "site": "site-1777573904671-9hq71",
+        "color": "White",
+        "length": 1690,
+        "width": 200,
+        "adjust": 1,
+        "date": "2026-04-30",
+        "note": "Reste rouleau ROL-140875-1-1",
+        "key": "Topas|White|1690|200"
+      }
+    ],
     "clientPrices": [
       {
         "id": "cp-1777573840648-n4urh",
@@ -142,14 +190,32 @@
         "color": "White",
         "width": 200,
         "originalLength": 2000,
-        "currentLength": 2000,
+        "currentLength": 1690,
         "site": "site-1777573904671-9hq71",
         "purchaseDate": "2026-04-30",
         "purchaseRef": "",
-        "status": "full",
+        "status": "partial",
         "note": ""
       }
     ],
-    "rollCuts": []
+    "rollCuts": [
+      {
+        "id": "cut-1777574219016-kwew3",
+        "rollId": "roll-1777574140875-gn042",
+        "rollCode": "ROL-140875-1-1",
+        "article": "Topas",
+        "color": "White",
+        "width": 200,
+        "site": "site-1777573904671-9hq71",
+        "client": "Firas",
+        "date": "2026-04-30",
+        "soldLength": 310,
+        "previousLength": 2000,
+        "remainingLength": 1690,
+        "pm2": 220,
+        "total": 1364,
+        "note": ""
+      }
+    ]
   }
 }
