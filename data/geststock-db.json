@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updatedAt": "2026-04-30T00:00:00.000Z",
+  "updatedAt": "2026-04-30T15:43:30.855Z",
   "users": [
     {
       "id": "u-admin",
@@ -13,6 +13,12 @@
       "name": "visiteur",
       "role": "visitor",
       "passwordHash": "9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0"
+    },
+    {
+      "id": "usr-1777563808799-xyda8",
+      "name": "fetah",
+      "role": "admin",
+      "passwordHash": "eb19323db62e64b29eeb4c2265617e17ea6ac193a0da3a5eccdb715b8a7d5378"
     }
   ],
   "data": {
