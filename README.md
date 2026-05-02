@@ -28,7 +28,7 @@ Comptes par defaut :
 
 Le mode Admin peut modifier les donnees. Le mode Visiteur peut consulter et imprimer.
 
-Important : pour sauvegarder les modifications depuis l'application vers GitHub, l'admin doit renseigner un token GitHub fine-grained avec acces `Contents: Read and write` au depot. Sans token, l'application peut lire la base GitHub mais ne peut pas ecrire dedans.
+Important : pour sauvegarder les modifications depuis l'application vers GitHub, l'admin doit renseigner un token GitHub fine-grained avec acces `Contents: Read and write` au depot. Une fois le token renseigne, chaque modification Admin est envoyee automatiquement vers GitHub, et les autres appareils relisent la base automatiquement toutes les 5 secondes. Sans token, l'application peut lire la base GitHub mais ne peut pas ecrire dedans.
 
 ## Fichiers
 

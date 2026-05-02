@@ -64,6 +64,10 @@ button,input,select{font:inherit}
 .role-chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#e5e7eb;font-size:12px;font-weight:700;white-space:nowrap}
 .role-chip.visitor{color:#fbbf24}
 .role-chip.admin{color:#86efac}
+.sync-chip{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:6px 10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#93c5fd;font-size:12px;font-weight:700;white-space:nowrap}
+.sync-chip.ok{color:#86efac}
+.sync-chip.warn{color:#fbbf24}
+.sync-chip.bad{color:#fca5a5}
 
 /* â”€â”€ SHELL â”€â”€ */
 .shell{max-width:1480px;margin:0 auto;padding:20px 20px}
@@ -259,7 +263,7 @@ body.role-visitor .readonly-banner{display:block}
   .tab-btn{height:40px;justify-content:center;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:0 8px;font-size:11px;white-space:normal;text-align:center;line-height:1.15}
   .tab-btn.active{border-color:rgba(96,165,250,.65)}
   .topbar-right{border-left:none;padding-left:0;margin-left:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-  .topbar-right .icon-btn,.topbar-right .role-chip{width:100%;justify-content:center}
+  .topbar-right .icon-btn,.topbar-right .role-chip,.topbar-right .sync-chip{width:100%;justify-content:center}
   .shell{padding:12px 10px}
   .card{padding:14px;border-radius:10px}
   .side{border-radius:10px;padding:8px;overflow:auto}
@@ -300,6 +304,7 @@ body.role-visitor .readonly-banner{display:block}
   </div>
   <div class="topbar-right">
     <span class="role-chip visitor" id="role-chip">Non connecte</span>
+    <span class="sync-chip warn" id="sync-chip">Sync...</span>
     <button class="icon-btn" id="role-login">Connexion</button>
     <button class="icon-btn" id="role-logout">Deconnexion</button>
     <button class="icon-btn" id="toggle-dashboard">KPIs</button>
@@ -613,6 +618,12 @@ let currentRole='visitor';
 let githubToken=sessionStorage.getItem('gs3_github_token')||'';
 let githubSaveTimer=null;
 let isApplyingRemote=false;
+let lastRemoteUpdatedAt='';
+let lastLocalUpdatedAt='';
+let syncPollTimer=null;
+let saveInProgress=false;
+let pendingSaveAfterCurrent=false;
+const GITHUB_SYNC_INTERVAL=5000;
 
 function isAdmin(){return currentRole==='admin'}
 function isLoggedIn(){return !!currentUser}
@@ -664,15 +675,31 @@ function applyAccessMode(){
       if(el.tagName==='SELECT')el.disabled=false;
     }
   });
+  updateSyncStatus();
+}
+function updateSyncStatus(state){
+  const chip=$('sync-chip');
+  if(!chip)return;
+  let label='Lecture GitHub auto';
+  let cls='sync-chip ok';
+  if(state==='saving'){label='Sync envoi...';cls='sync-chip warn'}
+  else if(state==='loading'){label='Sync lecture...';cls='sync-chip warn'}
+  else if(state==='error'){label='Sync erreur';cls='sync-chip bad'}
+  else if(isAdmin()&&!githubToken){label='Token requis';cls='sync-chip warn'}
+  else if(isAdmin()&&githubToken){label='Sync auto active';cls='sync-chip ok'}
+  chip.textContent=label;
+  chip.className=cls;
 }
 
-function dataPayload(){return{version:'1.0',updatedAt:new Date().toISOString(),users,data:Object.fromEntries(CKEYS.map(k=>[k,db[k]||[]]))}}
+function dataPayload(){
+  lastLocalUpdatedAt=new Date().toISOString();
+  return{version:'1.0',updatedAt:lastLocalUpdatedAt,users,data:Object.fromEntries(CKEYS.map(k=>[k,db[k]||[]]))};
+}
 function applyDataPayload(payload){
   if(!payload)return;
-  isApplyingRemote=true;
+  lastRemoteUpdatedAt=payload.updatedAt||lastRemoteUpdatedAt;
   users=(payload.users&&payload.users.length?payload.users:DEFAULT_USERS).map(u=>({...u,role:u.role==='admin'?'admin':'visitor'}));
   CKEYS.forEach(k=>{db[k]=Array.isArray(payload.data?.[k])?payload.data[k]:[]});
-  isApplyingRemote=false;
 }
 function save(){try{CKEYS.forEach(k=>localStorage.setItem('gs3_'+k,JSON.stringify(db[k])));localStorage.setItem('gs3_users',JSON.stringify(users));if(!isApplyingRemote)scheduleGitHubSave();}catch(e){}}
 function load(){
@@ -686,27 +713,37 @@ function load(){
 
 async function syncFromGitHub(silent=false){
   try{
+    updateSyncStatus('loading');
     const res=await fetch(`${GITHUB_DATA_PATH}?t=${Date.now()}`,{cache:'no-store'});
     if(!res.ok)throw new Error('Base GitHub introuvable');
     const payload=await res.json();
+    if(payload.updatedAt&&payload.updatedAt===lastRemoteUpdatedAt){updateSyncStatus();return;}
+    isApplyingRemote=true;
     applyDataPayload(payload);
     save();
     refresh();
+    isApplyingRemote=false;
+    updateSyncStatus();
     if(!silent)notify('Donnees synchronisees depuis GitHub');
   }catch(e){
+    isApplyingRemote=false;
+    updateSyncStatus('error');
     if(!silent)notify('Synchronisation GitHub impossible : '+e.message,true);
   }
 }
 function scheduleGitHubSave(){
   if(!isAdmin()||!githubToken)return;
   clearTimeout(githubSaveTimer);
-  githubSaveTimer=setTimeout(()=>saveToGitHub(true),1200);
+  githubSaveTimer=setTimeout(()=>saveToGitHub(true),800);
 }
 function b64(str){return btoa(unescape(encodeURIComponent(str)))}
 async function saveToGitHub(silent=false){
   if(!isAdmin())return;
   if(!githubToken){if(!silent)notify('Ajoutez un token GitHub admin pour sauvegarder en ligne.',true);return;}
+  if(saveInProgress){pendingSaveAfterCurrent=true;return;}
+  saveInProgress=true;
   try{
+    updateSyncStatus('saving');
     const url=`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_DATA_PATH}?ref=${GITHUB_BRANCH}`;
     const current=await fetch(url,{headers:{Authorization:`Bearer ${githubToken}`,Accept:'application/vnd.github+json'}});
     if(!current.ok)throw new Error('Lecture GitHub refusee');
@@ -718,12 +755,25 @@ async function saveToGitHub(silent=false){
       body:JSON.stringify({message:'Sync GestStock data',content:b64(JSON.stringify(payload,null,2)),sha:meta.sha,branch:GITHUB_BRANCH})
     });
     if(!put.ok)throw new Error('Sauvegarde GitHub refusee');
+    lastRemoteUpdatedAt=payload.updatedAt;
+    updateSyncStatus();
     if(!silent)notify('Donnees sauvegardees sur GitHub');
   }catch(e){
+    updateSyncStatus('error');
     notify('Sauvegarde GitHub impossible : '+e.message,true);
+  }finally{
+    saveInProgress=false;
+    if(pendingSaveAfterCurrent){
+      pendingSaveAfterCurrent=false;
+      scheduleGitHubSave();
+    }
   }
 }
 function manualSyncToGitHub(){saveToGitHub(false)}
+function startAutoSync(){
+  clearInterval(syncPollTimer);
+  syncPollTimer=setInterval(()=>syncFromGitHub(true),GITHUB_SYNC_INTERVAL);
+}
 
 // â”€â”€â”€â”€â”€ EXPORT / RESTORE â”€â”€â”€â”€â”€
 function exportBackup(){
@@ -923,10 +973,10 @@ function renderUsersPanel(){
       </div>
       <div class="toolbar">
         <button class="btn primary" onclick="saveGitHubToken()">Enregistrer token pour cette session</button>
-        <button class="btn ok" onclick="manualSyncToGitHub()">Envoyer les donnees vers GitHub</button>
+        <button class="btn ok" onclick="manualSyncToGitHub()">Forcer sauvegarde maintenant</button>
         <button class="btn alt" onclick="syncFromGitHub()">Recharger depuis GitHub</button>
       </div>
-      <p style="font-size:12px;color:var(--mut)">Le token reste seulement dans la session du navigateur. Sans token, l'application peut lire GitHub mais ne peut pas sauvegarder les changements.</p>
+      <p style="font-size:12px;color:var(--mut)">Avec un token valide, chaque modification Admin est envoyee automatiquement vers GitHub. Les autres appareils relisent GitHub automatiquement toutes les 5 secondes.</p>
     </div>
     <div class="quick-entry">
       <h4>Ajouter / modifier utilisateur</h4>
@@ -1658,7 +1708,9 @@ function saveGitHubToken(){
   if(!v||v==='********')return notify('Token GitHub deja conserve pour cette session');
   githubToken=v.trim();
   sessionStorage.setItem('gs3_github_token',githubToken);
-  notify('Token GitHub conserve pour cette session');
+  updateSyncStatus();
+  notify('Token GitHub conserve. Synchronisation automatique activee.');
+  saveToGitHub(true);
 }
 async function saveUser(){
   if(!requireAdmin())return;
@@ -2671,6 +2723,7 @@ bindEffectAndDueModals();
 load();
 initDefaults();
 refresh();
+startAutoSync();
 syncFromGitHub(true).then(()=>{
   if(!currentUser){
     $('role-modal').style.display='flex';
