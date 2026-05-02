@@ -19,7 +19,7 @@ L'application sera disponible a l'adresse :
 
 ## Stockage et synchronisation
 
-GestStock utilise un fichier central `data/geststock-db.json` pour synchroniser les donnees entre PC et telephone via GitHub Pages.
+GestStock peut utiliser Supabase comme base professionnelle temps reel. GitHub Pages heberge l'interface, Supabase stocke les donnees.
 
 Comptes par defaut :
 
@@ -28,7 +28,16 @@ Comptes par defaut :
 
 Le mode Admin peut modifier les donnees. Le mode Visiteur peut consulter et imprimer.
 
-Important : pour sauvegarder les modifications depuis l'application vers GitHub, l'admin doit renseigner un token GitHub fine-grained avec acces `Contents: Read and write` au depot. Une fois le token renseigne, chaque modification Admin est envoyee automatiquement vers GitHub, et les autres appareils relisent la base automatiquement toutes les 5 secondes. Sans token, l'application peut lire la base GitHub mais ne peut pas ecrire dedans.
+Configuration Supabase :
+
+1. Creer un projet Supabase.
+2. Ouvrir `SQL Editor`.
+3. Executer le fichier `docs/supabase-schema.sql`.
+4. Copier `Project URL` et `anon public key`.
+5. Dans GestStock : `Base donnees > Utilisateurs > Synchronisation Supabase temps reel`.
+6. Coller URL + anon key, puis cliquer `Activer Supabase`.
+
+Une fois configure, chaque modification Admin est sauvegardee dans Supabase, et les autres appareils recoivent la mise a jour en temps reel.
 
 ## Fichiers
 
