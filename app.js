@@ -34,6 +34,8 @@ let operationAuditLog=[];
 let isApplyingRemote=false;
 let lastRemoteUpdatedAt='';
 let lastLocalUpdatedAt='';
+let remoteUpdateCount=0;
+let lastRemoteNotifTime=0;
 
 let supabaseUrl=localStorage.getItem('gs3_supabase_url')||'';
 let supabaseAnonKey=localStorage.getItem('gs3_supabase_anon_key')||'';
@@ -201,9 +203,14 @@ function updateSyncStatus(state){
   else if(state==='loading'){label='Sync lecture...';cls='sync-chip warn'}
   else if(state==='error'){label='Sync erreur';cls='sync-chip bad'}
   else if(!supabaseClient&&supabaseUrl){label='Supabase a verifier';cls='sync-chip warn'}
-  else if(supabaseClient){label='Temps reel actif';cls='sync-chip ok'}
+  else if(supabaseClient){
+    label='Temps reel actif';
+    if(remoteUpdateCount>0)label+=' ('+remoteUpdateCount+' maj)';
+    cls='sync-chip ok';
+  }
   chip.textContent=label;
   chip.className=cls;
+  if(remoteUpdateCount>0)chip.title=remoteUpdateCount+' mise(s) a jour depuis un autre appareil';
 }
 
 function dataPayload(){
@@ -470,28 +477,38 @@ function subscribeSupabaseRealtime(){
     .on('postgres_changes',{event:'*',schema:'public',table:USERS_TABLE},payload=>{
       if(isApplyingRemote||isSavingToSupabase)return;
       const{eventType,new:newRow,old:oldRow}=payload;
-      if(eventType==='INSERT'&&newRow){const u=rowToUser(newRow);if(!users.find(x=>x.id===u.id)){users.push(u);save({remote:false});debouncedRefresh()}}
-      else if(eventType==='UPDATE'&&newRow){const u=rowToUser(newRow);const idx=users.findIndex(x=>x.id===u.id);if(idx>=0){users[idx]=u;save({remote:false});debouncedRefresh()}}
-      else if(eventType==='DELETE'&&oldRow){users=users.filter(x=>x.id!==oldRow.id);save({remote:false});debouncedRefresh()}
+      if(eventType==='INSERT'&&newRow){const u=rowToUser(newRow);if(!users.find(x=>x.id===u.id)){users.push(u);onRemoteChange();save({remote:false});debouncedRefresh()}}
+      else if(eventType==='UPDATE'&&newRow){const u=rowToUser(newRow);const idx=users.findIndex(x=>x.id===u.id);if(idx>=0){users[idx]=u;onRemoteChange();save({remote:false});debouncedRefresh()}}
+      else if(eventType==='DELETE'&&oldRow){users=users.filter(x=>x.id!==oldRow.id);onRemoteChange();save({remote:false});debouncedRefresh()}
     })
     .subscribe();
   channels.push(userCh);
   supabaseChannel=channels;
+}
+function onRemoteChange(){
+  remoteUpdateCount++;
+  const now=Date.now();
+  if(now-lastRemoteNotifTime>8000){
+    lastRemoteNotifTime=now;
+    notify('Donnees mises a jour depuis un autre appareil');
+    updateSyncStatus();
+  }
 }
 function handleTableChange(key,tableName,payload){
   if(isApplyingRemote||isSavingToSupabase)return;
   const{eventType,new:newRow,old:oldRow}=payload;
   if(eventType==='INSERT'&&newRow){
     const obj=rowToObj(tableName,newRow);
-    if(!db[key].find(x=>x.id===obj.id)){db[key].push(obj);save({remote:false});debouncedRefresh()}
+    if(!db[key].find(x=>x.id===obj.id)){db[key].push(obj);onRemoteChange();save({remote:false});debouncedRefresh()}
   }
   else if(eventType==='UPDATE'&&newRow){
     const obj=rowToObj(tableName,newRow);
     const idx=db[key].findIndex(x=>x.id===obj.id);
-    if(idx>=0&&(!db[key][idx]._updatedAt||newRow.updated_at>db[key][idx]._updatedAt)){db[key][idx]=obj;save({remote:false});debouncedRefresh()}
+    if(idx>=0&&(!db[key][idx]._updatedAt||newRow.updated_at>db[key][idx]._updatedAt)){db[key][idx]=obj;onRemoteChange();save({remote:false});debouncedRefresh()}
   }
   else if(eventType==='DELETE'&&oldRow){
     db[key]=db[key].filter(x=>x.id!==oldRow.id);
+    onRemoteChange();
     save({remote:false});
     debouncedRefresh();
   }
