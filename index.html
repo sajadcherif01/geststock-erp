@@ -1003,10 +1003,6 @@ let edit={article:-1,client:-1,supplier:-1,site:-1,cp:-1,sp:-1};
 let view={clientAccount:'',supplierAccount:''};
 let confirmCallback=null;
 let restoreData=null;
-const GITHUB_OWNER='sajadcherif01';
-const GITHUB_REPO='geststock-erp';
-const GITHUB_BRANCH='main';
-const GITHUB_DATA_PATH='data/geststock-db.json';
 const DEFAULT_USERS=[
   {id:'u-admin',name:'admin',role:'admin',passwordHash:'03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'},
   {id:'u-visiteur',name:'visiteur',role:'visitor',passwordHash:'9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0'}
@@ -1016,15 +1012,10 @@ let users=[];
 let currentUser=null;
 let currentRole='visitor';
 let operationAuditLog=[];
-let githubToken=sessionStorage.getItem('gs3_github_token')||'';
-let githubSaveTimer=null;
 let isApplyingRemote=false;
 let lastRemoteUpdatedAt='';
 let lastLocalUpdatedAt='';
-let syncPollTimer=null;
-let saveInProgress=false;
-let pendingSaveAfterCurrent=false;
-const GITHUB_SYNC_INTERVAL=5000;
+
 let supabaseUrl=localStorage.getItem('gs3_supabase_url')||'';
 let supabaseAnonKey=localStorage.getItem('gs3_supabase_anon_key')||'';
 let supabaseClient=null;
@@ -1111,7 +1102,7 @@ function applyAccessMode(){
   const login=$('role-login'),logout=$('role-logout');
   if(login)login.style.display=currentUser?'none':'inline-flex';
   if(logout)logout.style.display=currentUser?'inline-flex':'none';
-  const writeNames=['saveArticle','saveClient','saveSupplier','saveSite','saveClientPrice','saveSupplierPrice','saveUser','deleteUser','savePurchase','saveSale','saveTransfer','saveInventory','saveAccountPayment','confirmSession','removeRow','removeSite','removeSessionLine','openEditLine','editOperationRow','deleteOperationRow','editPayment','deletePayment','setPaymentPaidStatus','togglePaymentPaid','restoreFromHistory','promptClientFee','createClientFee','editArticle','editClientRow','editSupplierRow','editSiteRow','editClientPrice','editSupplierPrice','clearForm','clearFormMv','clearFormInv','importExcelInventaire','confirmExcelInventaire','cancelExcelInventaire','applyResetStock','exportBackup','manualSyncToGitHub','syncFromGitHub','saveSupabaseConfig','manualSyncToSupabase','loadFromSupabase'];
+  const writeNames=['saveArticle','saveClient','saveSupplier','saveSite','saveClientPrice','saveSupplierPrice','saveUser','deleteUser','savePurchase','saveSale','saveTransfer','saveInventory','saveAccountPayment','confirmSession','removeRow','removeSite','removeSessionLine','openEditLine','editOperationRow','deleteOperationRow','editPayment','deletePayment','setPaymentPaidStatus','togglePaymentPaid','restoreFromHistory','promptClientFee','createClientFee','editArticle','editClientRow','editSupplierRow','editSiteRow','editClientPrice','editSupplierPrice','clearForm','clearFormMv','clearFormInv','importExcelInventaire','confirmExcelInventaire','cancelExcelInventaire','applyResetStock','exportBackup','saveSupabaseConfig','manualSyncToSupabase','loadFromSupabase'];
   document.querySelectorAll('button').forEach(btn=>{
     const onclick=btn.getAttribute('onclick')||'';
     const id=btn.id||'';
@@ -1122,7 +1113,7 @@ function applyAccessMode(){
     else btn.disabled=false;
   });
   document.querySelectorAll('.quick-entry input,.quick-entry select,.form-grid input,.form-grid select').forEach(el=>{
-    const keepEnabled=['client-account-select','supplier-account-select','admin-code-input','login-name-input','github-token-input','supabase-url-input','supabase-key-input'].includes(el.id)||el.closest('#role-modal')||el.closest('[id$="-print-options"]');
+    const keepEnabled=['client-account-select','supplier-account-select','admin-code-input','login-name-input','supabase-url-input','supabase-key-input'].includes(el.id)||el.closest('#role-modal')||el.closest('[id$="-print-options"]');
     if(!isAdmin()&&!keepEnabled){
       el.setAttribute('readonly','readonly');
       if(el.tagName==='SELECT')el.disabled=true;
@@ -1137,15 +1128,13 @@ function applyAccessMode(){
 function updateSyncStatus(state){
   const chip=$('sync-chip');
   if(!chip)return;
-  let label=supabaseClient?'Supabase temps reel':'Lecture GitHub auto';
+  let label='Supabase temps reel';
   let cls='sync-chip ok';
   if(state==='saving'){label='Sync envoi...';cls='sync-chip warn'}
   else if(state==='loading'){label='Sync lecture...';cls='sync-chip warn'}
   else if(state==='error'){label='Sync erreur';cls='sync-chip bad'}
   else if(!supabaseClient&&supabaseUrl){label='Supabase a verifier';cls='sync-chip warn'}
   else if(supabaseClient){label='Temps reel actif';cls='sync-chip ok'}
-  else if(isAdmin()&&!githubToken){label='Token requis';cls='sync-chip warn'}
-  else if(isAdmin()&&githubToken){label='Sync auto active';cls='sync-chip ok'}
   chip.textContent=label;
   chip.className=cls;
 }
@@ -1201,78 +1190,8 @@ function load(){
   isDataLoaded=true;
 }
 
-async function syncFromGitHub(silent=false){
-  try{
-    updateSyncStatus('loading');
-    const res=await fetch(`${GITHUB_DATA_PATH}?t=${Date.now()}`,{cache:'no-store'});
-    if(!res.ok)throw new Error('Base GitHub introuvable');
-    const payload=await res.json();
-    if(payload.updatedAt&&payload.updatedAt===lastRemoteUpdatedAt){updateSyncStatus();return;}
-    if(!payloadHasAnyData(payload)&&dbHasAnyData()){isDataLoaded=true;updateSyncStatus();return;}
-    if(payloadHasAnyData(payload)&&lastLocalUpdatedAt&&payload.updatedAt&&lastLocalUpdatedAt>payload.updatedAt){updateSyncStatus();return;}
-    isApplyingRemote=true;
-    applyDataPayload(payload);
-    save();
-    refresh();
-    isApplyingRemote=false;
-    isDataLoaded=true;
-    updateSyncStatus();
-    if(!silent)notify('Donnees synchronisees depuis GitHub');
-  }catch(e){
-    isApplyingRemote=false;
-    updateSyncStatus('error');
-    if(!silent)notify('Synchronisation GitHub impossible : '+e.message,true);
-  }
-}
-function scheduleGitHubSave(){
-  if(!isAdmin()||!githubToken)return;
-  clearTimeout(githubSaveTimer);
-  githubSaveTimer=setTimeout(()=>saveToGitHub(true),800);
-}
 function scheduleRemoteSave(){
-  if(supabaseClient){scheduleSupabaseSave();return;}
-  scheduleGitHubSave();
-}
-function b64(str){return btoa(unescape(encodeURIComponent(str)))}
-async function saveToGitHub(silent=false){
-  if(!isAdmin())return;
-  if(!canSyncData())return;
-  if(!githubToken){if(!silent)notify('Ajoutez un token GitHub admin pour sauvegarder en ligne.',true);return;}
-  if(saveInProgress){pendingSaveAfterCurrent=true;return;}
-  saveInProgress=true;
-  try{
-    updateSyncStatus('saving');
-    const url=`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_DATA_PATH}?ref=${GITHUB_BRANCH}`;
-    const current=await fetch(url,{headers:{Authorization:`Bearer ${githubToken}`,Accept:'application/vnd.github+json'}});
-    if(!current.ok)throw new Error('Lecture GitHub refusee');
-    const meta=await current.json();
-    const remotePayload=meta.content?JSON.parse(decodeURIComponent(escape(atob(meta.content.replace(/\n/g,''))))):null;
-    if(remotePayload?.updatedAt&&lastLocalUpdatedAt&&remotePayload.updatedAt>lastLocalUpdatedAt){lastRemoteUpdatedAt=remotePayload.updatedAt;updateSyncStatus();return;}
-    const payload=dataPayload();
-    const put=await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_DATA_PATH}`,{
-      method:'PUT',
-      headers:{Authorization:`Bearer ${githubToken}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},
-      body:JSON.stringify({message:'Sync GestStock data',content:b64(JSON.stringify(payload,null,2)),sha:meta.sha,branch:GITHUB_BRANCH})
-    });
-    if(!put.ok)throw new Error('Sauvegarde GitHub refusee');
-    lastRemoteUpdatedAt=payload.updatedAt;
-    updateSyncStatus();
-    if(!silent)notify('Donnees sauvegardees sur GitHub');
-  }catch(e){
-    updateSyncStatus('error');
-    notify('Sauvegarde GitHub impossible : '+e.message,true);
-  }finally{
-    saveInProgress=false;
-    if(pendingSaveAfterCurrent){
-      pendingSaveAfterCurrent=false;
-      scheduleGitHubSave();
-    }
-  }
-}
-function manualSyncToGitHub(){saveToGitHub(false)}
-function startAutoSync(){
-  clearInterval(syncPollTimer);
-  syncPollTimer=setInterval(()=>{if(!supabaseClient)syncFromGitHub(true)},GITHUB_SYNC_INTERVAL);
+  if(supabaseClient){scheduleSupabaseSave();}
 }
 
 function initSupabase(){
@@ -1858,18 +1777,6 @@ function renderUsersPanel(){
       <p style="font-size:12px;color:var(--mut)">La restauration valide le format avant remplacement et relance ensuite la synchronisation distante.</p>
     </div>
     <div class="quick-entry">
-      <h4>Ancienne synchronisation GitHub</h4>
-      <div class="form-grid">
-        <div class="field full-col"><label>Token GitHub admin</label><input id="github-token-input" type="password" placeholder="Token GitHub fine-grained avec droit Contents read/write"></div>
-      </div>
-      <div class="toolbar">
-        <button class="btn primary" onclick="saveGitHubToken()">Enregistrer token pour cette session</button>
-        <button class="btn ok" onclick="manualSyncToGitHub()">Forcer sauvegarde maintenant</button>
-        <button class="btn alt" onclick="syncFromGitHub()">Recharger depuis GitHub</button>
-      </div>
-      <p style="font-size:12px;color:var(--mut)">Avec un token valide, chaque modification Admin est envoyee automatiquement vers GitHub. Les autres appareils relisent GitHub automatiquement toutes les 5 secondes.</p>
-    </div>
-    <div class="quick-entry">
       <h4>Ajouter / modifier utilisateur</h4>
       <div class="form-grid">
         <div class="field"><label>Nom</label><input id="f-user-name" placeholder="Nom utilisateur"></div>
@@ -1882,7 +1789,6 @@ function renderUsersPanel(){
       <thead><tr><th>#</th><th>Nom</th><th>Role</th><th>Action</th></tr></thead>
       <tbody>${users.length?users.map((u,i)=>`<tr><td>${i+1}</td><td>${h(u.name)}</td><td><span class="badge ${u.role==='admin'?'b-purple':'b-brand'}">${u.role==='admin'?'Admin':'Visiteur'}</span></td><td><button class="btn sm danger" onclick="deleteUser('${attr(u.id)}')">Supprimer</button></td></tr>`).join(''):`<tr><td class="empty" colspan="4">Aucun utilisateur</td></tr>`}</tbody>
     </table></div>`;
-  if($('github-token-input'))$('github-token-input').value=githubToken?'********':'';
   if($('supabase-url-input'))$('supabase-url-input').value=supabaseUrl;
   if($('supabase-key-input'))$('supabase-key-input').value=supabaseAnonKey?'********':'';
   $('backup-import-input')?.addEventListener('change',e=>{importBackupFile(e.target.files?.[0]);e.target.value='';},{once:true});
@@ -2590,16 +2496,6 @@ function startSanitizeObserver(){
   }).observe(document.body,{childList:true,subtree:true,characterData:true});
 }
 
-function saveGitHubToken(){
-  if(!requireAdmin())return;
-  const v=$('github-token-input')?.value||'';
-  if(!v||v==='********')return notify('Token GitHub deja conserve pour cette session');
-  githubToken=v.trim();
-  sessionStorage.setItem('gs3_github_token',githubToken);
-  updateSyncStatus();
-  notify('Token GitHub conserve. Synchronisation automatique activee.');
-  saveToGitHub(true);
-}
 async function saveUser(){
   if(!requireAdmin())return;
   const name=norm($('f-user-name')?.value).toLowerCase();
@@ -3510,7 +3406,7 @@ window.importExcelInventaire=importExcelInventaire;window.confirmExcelInventaire
 window.exportBackup=exportBackup;window.openResetStockModal=openResetStockModal;window.applyResetStock=applyResetStock;
 window.openEditLine=openEditLine;window.renderAnalytics=renderAnalytics;
 window.renderBenefice=renderBenefice;
-window.saveUser=saveUser;window.deleteUser=deleteUser;window.saveGitHubToken=saveGitHubToken;window.manualSyncToGitHub=manualSyncToGitHub;window.syncFromGitHub=syncFromGitHub;
+window.saveUser=saveUser;window.deleteUser=deleteUser;
 window.saveSupabaseConfig=saveSupabaseConfig;window.manualSyncToSupabase=manualSyncToSupabase;window.loadFromSupabase=loadFromSupabase;
 window.restoreFromHistory=restoreFromHistory;
 window.editOperationRow=editOperationRow;window.deleteOperationRow=deleteOperationRow;
@@ -3520,7 +3416,7 @@ window.promptClientFee=promptClientFee;window.createClientFee=createClientFee;
 function adminWrap(fn){return function(...args){if(!requireAdmin())return;return fn.apply(this,args)}}
 [
   'saveArticle','saveClient','saveSupplier','saveSite','saveClientPrice','saveSupplierPrice',
-  'saveUser','deleteUser','saveGitHubToken','manualSyncToGitHub','saveSupabaseConfig','manualSyncToSupabase',
+  'saveUser','deleteUser','saveSupabaseConfig','manualSyncToSupabase',
   'savePurchase','saveSale','saveTransfer','saveInventory','saveAccountPayment',
   'editArticle','editClientRow','editSupplierRow','editSiteRow','editClientPrice','editSupplierPrice',
   'removeRow','removeSite','clearForm','clearFormMv','clearFormInv','removeSessionLine','confirmSession',
@@ -3771,9 +3667,7 @@ initDefaults();
 refresh();
 isApplyingRemote=false;
 initSupabase();
-startAutoSync();
-const initialRemoteLoad=supabaseClient?loadFromSupabase(true):syncFromGitHub(true);
-initialRemoteLoad.then(()=>{
+(supabaseClient?loadFromSupabase(true):Promise.resolve()).then(()=>{
   if(!currentUser){
     $('role-modal').style.display='flex';
     setTimeout(()=>$('login-name-input')?.focus(),80);
