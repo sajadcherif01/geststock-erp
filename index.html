@@ -3834,28 +3834,9 @@ initialRemoteLoad.then(()=>{
     setTimeout(()=>$('login-name-input')?.focus(),80);
   }
 });
-  // Bottom nav sync with tabs
-  const bottomNav=document.getElementById('bottom-nav');
-  if(bottomNav){
-    bottomNav.addEventListener('click',e=>{
-      const btn=e.target.closest('[data-main]');
-      if(btn){
-        const topTab=document.querySelector(`.tab-btn[data-main="${btn.dataset.main}"]`);
-        if(topTab)topTab.click();
-      }
-    });
-    // Update bottom nav active state when tabs change
-    const observer=new MutationObserver(()=>{
-      const active=document.querySelector('.tab-btn[data-main].active');
-      if(active){
-        bottomNav.querySelectorAll('[data-main]').forEach(b=>b.classList.toggle('active',b.dataset.main===active.dataset.main));
-      }
-    });
-    document.querySelectorAll('.tab-btn[data-main]').forEach(tab=>observer.observe(tab,{attributes:true,attributeFilter:['class']}));
-  }
 </script>
 
-<!-- BOTTOM NAV MOBILE -->
+<!-- BOTTOM NAV MOBILE (doit etre APRES le script) -->
 <nav id="bottom-nav">
   <button data-main="database" class="active">
     <span class="bn-icon">📋</span>
@@ -3878,6 +3859,31 @@ initialRemoteLoad.then(()=>{
     <span class="bn-label">Rouleaux</span>
   </button>
 </nav>
+
+<script>
+(function(){
+  var nav=document.getElementById('bottom-nav');
+  if(!nav)return;
+  nav.addEventListener('click',function(e){
+    var btn=e.target.closest('[data-main]');
+    if(btn){
+      var topTab=document.querySelector('.tab-btn[data-main="'+btn.dataset.main+'"]');
+      if(topTab)topTab.click();
+    }
+  });
+  var observer=new MutationObserver(function(){
+    var active=document.querySelector('.tab-btn[data-main].active');
+    if(active){
+      nav.querySelectorAll('[data-main]').forEach(function(b){
+        b.classList.toggle('active',b.dataset.main===active.dataset.main);
+      });
+    }
+  });
+  document.querySelectorAll('.tab-btn[data-main]').forEach(function(tab){
+    observer.observe(tab,{attributes:true,attributeFilter:['class']});
+  });
+})();
+</script>
 
 </body>
 </html>
