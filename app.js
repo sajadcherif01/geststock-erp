@@ -46,6 +46,54 @@ let debouncedRefreshTimer=null;
 function debouncedRefresh(){clearTimeout(debouncedRefreshTimer);debouncedRefreshTimer=setTimeout(refresh,100)}
 let pendingSupabaseSave=false;
 const SUPABASE_STATE_ID='main';
+
+// ===== INDEXED DB (fallback pour localStorage depasse) =====
+const IDB_NAME='geststock',IDB_VER=1,IDB_STORE='kv';
+let idbReady=false;
+let idbDb=null;
+function idbOpen(){
+  return new Promise((res,rej)=>{
+    if(idbReady&&idbDb){res(idbDb);return}
+    try{
+      const req=indexedDB.open(IDB_NAME,IDB_VER);
+      req.onupgradeneeded=e=>{e.target.result.createObjectStore(IDB_STORE)};
+      req.onsuccess=e=>{idbDb=e.target.result;idbReady=true;res(idbDb)};
+      req.onerror=e=>{idbReady=false;rej(e.target.error)};
+    }catch(e){idbReady=false;rej(e)}
+  });
+}
+async function idbSave(key,value){
+  try{const db=await idbOpen();const tx=db.transaction(IDB_STORE,'readwrite');tx.objectStore(IDB_STORE).put(value,key);await new Promise((res,rej)=>{tx.oncomplete=res;tx.onerror=rej})}catch(e){console.warn('IDB save fail',e)}
+}
+async function idbLoad(key){
+  try{const db=await idbOpen();return await db.transaction(IDB_STORE,'readonly').objectStore(IDB_STORE).get(key)}catch(e){return undefined}
+}
+
+async function idbSaveAll(){
+  if(!idbReady)return;
+  try{
+    const tx=idbDb.transaction(IDB_STORE,'readwrite');
+    CKEYS.forEach(k=>tx.objectStore(IDB_STORE).put(JSON.stringify(db[k]||[]),'gs3_'+k));
+    tx.objectStore(IDB_STORE).put(JSON.stringify(users),'gs3_users');
+    tx.objectStore(IDB_STORE).put(lastLocalUpdatedAt,'gs3_updated_at');
+    await new Promise((res,rej)=>{tx.oncomplete=res;tx.onerror=rej});
+  }catch(e){console.warn('IDB saveAll fail',e)}
+}
+async function idbTryLoad(){
+  try{
+    await idbOpen();
+    const tx=idbDb.transaction(IDB_STORE,'readonly');
+    const store=tx.objectStore(IDB_STORE);
+    const idbUpdated=await new Promise((res,rej)=>{const r=store.get('gs3_updated_at');r.onsuccess=()=>res(r.result);r.onerror=rej});
+    if(idbUpdated&&(!lastLocalUpdatedAt||idbUpdated>lastLocalUpdatedAt)){
+      for(const k of CKEYS){const v=await new Promise(r=>{const q=store.get('gs3_'+k);q.onsuccess=()=>r(q.result)});if(v)db[k]=JSON.parse(v)}
+      const uv=await new Promise(r=>{const q=store.get('gs3_users');q.onsuccess=()=>r(q.result)});if(uv)users=JSON.parse(uv);
+      lastLocalUpdatedAt=idbUpdated;
+      save({touch:false,remote:false});refresh();
+    }
+  }catch(e){console.warn('IDB migrate check fail',e)}
+}
+
 // ===== PER-TABLE SUPABASE SYNC =====
 const TABLE_MAP={
   articles:'geststock_articles',clients:'geststock_clients',suppliers:'geststock_suppliers',
@@ -194,6 +242,7 @@ function save(options={}){
     CKEYS.forEach(k=>localStorage.setItem('gs3_'+k,JSON.stringify(db[k]||[])));
     localStorage.setItem('gs3_users',JSON.stringify(users));
     if(remote)scheduleRemoteSave();
+    idbSaveAll();
   }catch(e){console.warn('Local save failed',e);}
 }
 function load(){
@@ -2686,6 +2735,7 @@ initDefaults();
 refresh();
 isApplyingRemote=false;
 initSupabase();
+idbTryLoad();
 (supabaseClient?loadFromSupabase(true):Promise.resolve()).then(()=>{
   if(!currentUser){
     $('role-modal').style.display='flex';
