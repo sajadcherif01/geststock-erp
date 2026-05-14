@@ -1,0 +1,37 @@
+{
+  "name": "geststock-erp",
+  "version": "4.1.0",
+  "private": true,
+  "description": "GestStock ERP - Application mobile Android/iOS + Desktop.",
+  "scripts": {
+    "desktop": "electron .",
+    "pack:win": "electron-builder --win portable",
+    "cap:copy": "npx cap copy",
+    "cap:sync": "npx cap sync",
+    "cap:android": "npx cap open android",
+    "cap:ios": "npx cap add ios",
+    "build:www": "node -e \"require('fs').cpSync('index.html','www/index.html');require('fs').cpSync('.nojekyll','www/.nojekyll',{recursive:true,errorOnExist:false});['data','docs'].forEach(d=>require('fs').cpSync(d,'www/'+d,{recursive:true,errorOnExist:false}))\"",
+    "build:apk": "npm run build:www && npx cap sync && cd android && gradlew assembleDebug"
+  },
+  "build": {
+    "appId": "ma.geststock.erp",
+    "productName": "GestStock ERP",
+    "files": [
+      "index.html",
+      "data/**/*",
+      "docs/**/*",
+      "desktop/**/*"
+    ],
+    "win": {
+      "target": "portable",
+      "signAndEditExecutable": false
+    }
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
+    "electron": "^30.5.1",
+    "electron-builder": "^24.13.3"
+  }
+}
