@@ -1,12 +1,12 @@
 {
   "version": "1.0",
-  "updatedAt": "2026-05-08T18:38:19.803Z",
+  "updatedAt": "2026-05-14T11:06:56.312Z",
   "users": [
     {
       "id": "u-admin",
       "name": "admin",
       "role": "admin",
-      "passwordHash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"
+      "passwordHash": "132c6181eeefe72f03e21876ae68a46d8486f073fa784c09aa7e040406342a48"
     },
     {
       "id": "u-visiteur",
@@ -11653,7 +11653,8 @@
         "note": "",
         "type": "client",
         "amount": 6025,
-        "deductNow": true
+        "deductNow": true,
+        "paidStatus": "paid"
       },
       {
         "id": "pay-1777551239265-nunip",
@@ -11664,7 +11665,8 @@
         "note": "",
         "type": "client",
         "amount": 20400,
-        "deductNow": true
+        "deductNow": true,
+        "paidStatus": "paid"
       },
       {
         "id": "pay-1777717127524-576u5",
@@ -11675,7 +11677,8 @@
         "note": "",
         "type": "client",
         "amount": 6641,
-        "deductNow": true
+        "deductNow": true,
+        "paidStatus": "paid"
       }
     ],
     "rolls": [
