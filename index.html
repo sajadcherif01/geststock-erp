@@ -623,6 +623,63 @@ body:not(.home-mode) .module.active{
   .home-sub{max-width:none}
   .home-card::after{width:86px;height:86px;right:-30px;bottom:-42px}
 }
+
+/* ===== MOBILE FIRST ===== */
+@media(max-width:640px){
+  body{padding-bottom:70px}
+  .topbar{padding:0 12px;min-height:48px}
+  .brand{padding-right:12px}
+  .brand-text h1{font-size:13px}
+  .brand-text p{display:none}
+  .main-tabs{display:none}
+  .topbar-right{gap:4px;padding-left:8px}
+  .icon-btn{padding:5px 8px;font-size:11px}
+  .role-chip,.sync-chip{font-size:10px;padding:4px 6px;gap:4px}
+  .shell{padding:12px 10px}
+  .module.active{grid-template-columns:1fr}
+  .side{position:static;margin-bottom:12px}
+  .side .sub-btn{padding:12px;font-size:14px}
+  .side .sub-btn .icon{display:inline;margin-right:8px;font-size:16px}
+  .table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap}
+  .table th,.table td{padding:8px 10px;font-size:12px;min-height:44px}
+  .form-grid{grid-template-columns:1fr}
+  .kpi-row{grid-template-columns:1fr 1fr;gap:8px}
+  .kpi{padding:12px;gap:4px}
+  .kpi .k{font-size:10px}
+  .kpi .v{font-size:18px}
+  button,input,select,.btn,.icon-btn,.touch-btn{min-height:44px}
+  input,select{padding:12px 10px;font-size:16px}
+  .summary{grid-template-columns:1fr}
+  .summary-item{padding:12px}
+  #dashboard-wrap.kpi-row{grid-template-columns:repeat(2,1fr)}
+  .sub-btn .badge-count{min-width:22px;padding:2px 8px;font-size:11px}
+  .home-view{padding-top:4px;justify-content:flex-start;min-height:auto}
+  .home-grid{grid-template-columns:1fr;gap:8px}
+  .home-head h2{font-size:22px}
+  .home-head p{font-size:13px}
+  #bottom-nav{display:flex}
+}
+@media(min-width:641px){
+  #bottom-nav{display:none}
+}
+/* Bottom nav */
+#bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:#111827;border-top:1px solid rgba(255,255,255,.08);
+  display:flex;justify-content:space-around;align-items:stretch;
+  padding:4px 0;padding-bottom:max(4px,env(safe-area-inset-bottom));
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+#bottom-nav button{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  background:transparent;border:none;color:#6b7280;cursor:pointer;
+  padding:6px 4px;transition:.15s;font-size:10px;font-weight:500;
+  border-radius:8px;min-height:48px;
+}
+#bottom-nav button:hover{background:rgba(255,255,255,.05)}
+#bottom-nav button.active{color:#60a5fa}
+#bottom-nav .bn-icon{font-size:20px;line-height:1}
+#bottom-nav .bn-label{font-size:10px;font-weight:600}
 </style>
 </head>
 <body class="home-mode">
@@ -3777,6 +3834,50 @@ initialRemoteLoad.then(()=>{
     setTimeout(()=>$('login-name-input')?.focus(),80);
   }
 });
+  // Bottom nav sync with tabs
+  const bottomNav=document.getElementById('bottom-nav');
+  if(bottomNav){
+    bottomNav.addEventListener('click',e=>{
+      const btn=e.target.closest('[data-main]');
+      if(btn){
+        const topTab=document.querySelector(`.tab-btn[data-main="${btn.dataset.main}"]`);
+        if(topTab)topTab.click();
+      }
+    });
+    // Update bottom nav active state when tabs change
+    const observer=new MutationObserver(()=>{
+      const active=document.querySelector('.tab-btn[data-main].active');
+      if(active){
+        bottomNav.querySelectorAll('[data-main]').forEach(b=>b.classList.toggle('active',b.dataset.main===active.dataset.main));
+      }
+    });
+    document.querySelectorAll('.tab-btn[data-main]').forEach(tab=>observer.observe(tab,{attributes:true,attributeFilter:['class']}));
+  }
 </script>
+
+<!-- BOTTOM NAV MOBILE -->
+<nav id="bottom-nav">
+  <button data-main="database" class="active">
+    <span class="bn-icon">📋</span>
+    <span class="bn-label">Données</span>
+  </button>
+  <button data-main="movements">
+    <span class="bn-icon">🔄</span>
+    <span class="bn-label">Opérations</span>
+  </button>
+  <button data-main="inventory-import">
+    <span class="bn-icon">📥</span>
+    <span class="bn-label">Stock</span>
+  </button>
+  <button data-main="accounts">
+    <span class="bn-icon">💰</span>
+    <span class="bn-label">Comptes</span>
+  </button>
+  <button data-main="stock">
+    <span class="bn-icon">📦</span>
+    <span class="bn-label">Rouleaux</span>
+  </button>
+</nav>
+
 </body>
 </html>
