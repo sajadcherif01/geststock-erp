@@ -1029,6 +1029,9 @@ let supabaseClient=null;
 let supabaseChannel=null;
 let supabaseSaveTimer=null;
 let supabaseSaveInProgress=false;
+let isSavingToSupabase=false;
+let debouncedRefreshTimer=null;
+function debouncedRefresh(){clearTimeout(debouncedRefreshTimer);debouncedRefreshTimer=setTimeout(refresh,100)}
 let pendingSupabaseSave=false;
 const SUPABASE_STATE_ID='main';
 // ===== PER-TABLE SUPABASE SYNC =====
@@ -1386,6 +1389,7 @@ async function saveToSupabase(silent=false){
   if(!canSyncData())return;
   if(supabaseSaveInProgress){pendingSupabaseSave=true;return;}
   supabaseSaveInProgress=true;
+  isSavingToSupabase=true;
   try{
     updateSyncStatus('saving');
     // Per-table sync: delete stale rows + upsert current rows
@@ -1432,6 +1436,7 @@ async function saveToSupabase(silent=false){
     notify('Sauvegarde Supabase impossible : '+(e.message||e),true);
   }finally{
     supabaseSaveInProgress=false;
+    isSavingToSupabase=false;
     if(pendingSupabaseSave){pendingSupabaseSave=false;scheduleSupabaseSave();}
   }
 }
@@ -1474,32 +1479,32 @@ function subscribeSupabaseRealtime(){
   const userCh=supabaseClient
     .channel(USERS_TABLE+'-realtime')
     .on('postgres_changes',{event:'*',schema:'public',table:USERS_TABLE},payload=>{
-      if(isApplyingRemote)return;
+      if(isApplyingRemote||isSavingToSupabase)return;
       const{eventType,new:newRow,old:oldRow}=payload;
-      if(eventType==='INSERT'&&newRow){const u=rowToUser(newRow);if(!users.find(x=>x.id===u.id)){users.push(u);save({remote:false});refresh()}}
-      else if(eventType==='UPDATE'&&newRow){const u=rowToUser(newRow);const idx=users.findIndex(x=>x.id===u.id);if(idx>=0){users[idx]=u;save({remote:false});refresh()}}
-      else if(eventType==='DELETE'&&oldRow){users=users.filter(x=>x.id!==oldRow.id);save({remote:false});refresh()}
+      if(eventType==='INSERT'&&newRow){const u=rowToUser(newRow);if(!users.find(x=>x.id===u.id)){users.push(u);save({remote:false});debouncedRefresh()}}
+      else if(eventType==='UPDATE'&&newRow){const u=rowToUser(newRow);const idx=users.findIndex(x=>x.id===u.id);if(idx>=0){users[idx]=u;save({remote:false});debouncedRefresh()}}
+      else if(eventType==='DELETE'&&oldRow){users=users.filter(x=>x.id!==oldRow.id);save({remote:false});debouncedRefresh()}
     })
     .subscribe();
   channels.push(userCh);
   supabaseChannel=channels;
 }
 function handleTableChange(key,tableName,payload){
-  if(isApplyingRemote)return;
+  if(isApplyingRemote||isSavingToSupabase)return;
   const{eventType,new:newRow,old:oldRow}=payload;
   if(eventType==='INSERT'&&newRow){
     const obj=rowToObj(tableName,newRow);
-    if(!db[key].find(x=>x.id===obj.id)){db[key].push(obj);save({remote:false});refresh()}
+    if(!db[key].find(x=>x.id===obj.id)){db[key].push(obj);save({remote:false});debouncedRefresh()}
   }
   else if(eventType==='UPDATE'&&newRow){
     const obj=rowToObj(tableName,newRow);
     const idx=db[key].findIndex(x=>x.id===obj.id);
-    if(idx>=0&&(!db[key][idx]._updatedAt||newRow.updated_at>db[key][idx]._updatedAt)){db[key][idx]=obj;save({remote:false});refresh()}
+    if(idx>=0&&(!db[key][idx]._updatedAt||newRow.updated_at>db[key][idx]._updatedAt)){db[key][idx]=obj;save({remote:false});debouncedRefresh()}
   }
   else if(eventType==='DELETE'&&oldRow){
     db[key]=db[key].filter(x=>x.id!==oldRow.id);
     save({remote:false});
-    refresh();
+    debouncedRefresh();
   }
 }
 function manualSyncToSupabase(){saveToSupabase(false)}
@@ -3356,7 +3361,6 @@ function refresh(){
   updateMetrics();
   sanitizeVisibleText();
   applyAccessMode();
-  save({touch:false,remote:false});
 }
 
 // ===== SECURITE : force password change for default credentials =====
