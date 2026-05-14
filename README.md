@@ -44,3 +44,5 @@ Une fois configure, chaque modification Admin est sauvegardee dans Supabase, et 
 - `index.html` : application complete.
 - `docs/GestStock_Documentation_FR.html` : documentation source en francais.
 - `docs/GestStock_Documentation_FR.pdf` : schema detaille en PDF.
+- `desktop/main.js` : enveloppe Electron pour lancer l'application comme application Windows.
+- `package.json` : scripts `npm run desktop` et `npm run pack:win` pour preparer l'executable.
