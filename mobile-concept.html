@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Concept Mobile GestStock</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f0f1a;color:#e4e4ec;font-family:system-ui,-apple-system,sans-serif;padding:16px}
+h1{font-size:24px;margin-bottom:24px;text-align:center;color:#7c5cfc}
+h2{font-size:16px;margin:32px 0 12px;color:#aaa}
+.card{background:#1a1a2e;border-radius:12px;padding:16px;margin-bottom:20px;border:1px solid #2a2a3e}
+.screen{background:#16213e;border-radius:16px;padding:12px;margin-bottom:24px;max-width:380px;margin-left:auto;margin-right:auto;border:2px solid #333;position:relative;overflow:hidden}
+.screen::before{content:'📱';position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:20px;background:#16213e;padding:0 8px;z-index:1}
+.screen-header{display:flex;justify-content:space-between;align-items:center;padding:8px 4px 12px;font-size:14px}
+.screen-header .title{font-weight:600;color:#7c5cfc}
+.screen-header .icons{display:flex;gap:16px;font-size:16px}
+/* Navigation bottom */
+.bottom-nav{display:flex;background:#1a1a2e;border-radius:12px;padding:6px 4px;margin-top:12px;gap:2px}
+.bottom-nav span{flex:1;text-align:center;padding:8px 4px;font-size:10px;border-radius:8px;color:#666;transition:.2s}
+.bottom-nav span.active{background:#7c5cfc20;color:#7c5cfc}
+/* Table scrollable */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;border:1px solid #2a2a3e}
+.tbl-wrap table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}
+.tbl-wrap th{background:#2a2a3e;padding:8px 10px;text-align:left;font-weight:500;color:#888;font-size:11px;text-transform:uppercase;letter-spacing:.05em;position:sticky;top:0;z-index:1}
+.tbl-wrap td{padding:8px 10px;border-top:1px solid #222;font-size:13px}
+.tbl-wrap td:last-child{text-align:right;font-weight:600}
+/* Card view alternative */
+.card-row{background:#1e1e32;border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid #2a2a3e}
+.card-row .row-main{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.card-row .row-main .label{font-weight:600;font-size:14px}
+.card-row .row-main .value{color:#7c5cfc;font-weight:700;font-size:14px}
+.card-row .row-details{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12px;color:#888}
+.card-row .row-details span{display:flex;justify-content:space-between}
+.card-row .row-details span b{color:#ccc}
+/* Touch targets */
+.touch-btn{display:inline-flex;align-items:center;justify-content:center;height:44px;min-width:44px;padding:0 20px;border-radius:10px;border:none;background:#7c5cfc;color:#fff;font-size:14px;font-weight:600;gap:6px;cursor:pointer}
+.touch-btn.sm{height:36px;padding:0 12px;font-size:12px}
+.touch-btn.outline{background:transparent;border:1px solid #333;color:#ccc}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+/* Badge */
+.badge{background:#7c5cfc20;color:#7c5cfc;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600}
+.tag{font-size:10px;padding:2px 6px;border-radius:4px;background:#2a2a3e;color:#888}
+/* Compare */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0}
+.compare .side{border-radius:12px;padding:12px;border:2px solid}
+.compare .side.old{border-color:#662222;background:#1a0a0a}
+.compare .side.new{border-color:#226633;background:#0a1a10}
+.compare .side .label{font-size:11px;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+.footer-note{text-align:center;font-size:12px;color:#666;margin-top:32px;padding-top:16px;border-top:1px solid #222}
+.footer-note a{color:#7c5cfc;text-decoration:none}
+</style>
+</head>
+<body>
+
+<h1>📱 Concept Mobile GestStock ERP</h1>
+<p style="text-align:center;color:#888;font-size:14px;margin-bottom:24px">Aperçu avant implémentation — écran téléphone (~375px)</p>
+
+<!-- Preview 1: Navigation -->
+<div class="card">
+  <h2>1. Navigation mobile</h2>
+  <div class="screen">
+    <div class="screen-header">
+      <span class="title">GestStock</span>
+      <span class="icons">🔔 👤</span>
+    </div>
+    <div style="margin-bottom:8px;display:flex;gap:4px;flex-wrap:wrap">
+      <span class="tag">Admin</span>
+      <span class="badge">Temps réel</span>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px">
+      <tr><td style="padding:6px 4px;border-bottom:1px solid #222">Clients</td><td style="padding:6px 4px;border-bottom:1px solid #222;text-align:right;color:#7c5cfc">19</td></tr>
+      <tr><td style="padding:6px 4px;border-bottom:1px solid #222">Ventes (mois)</td><td style="padding:6px 4px;border-bottom:1px solid #222;text-align:right;color:#7c5cfc">12</td></tr>
+      <tr><td style="padding:6px 4px">Stock</td><td style="padding:6px 4px;text-align:right;color:#7c5cfc">6 rouleaux</td></tr>
+    </table>
+    <div class="bottom-nav">
+      <span class="active">📊 Données</span>
+      <span>📦 Opérations</span>
+      <span>📋 Stock</span>
+      <span>💰 Comptes</span>
+      <span>⚙️</span>
+    </div>
+  </div>
+  <p style="font-size:12px;color:#888;margin-top:8px">✅ Barre de navigation en bas (pouce accessible) + onglets réduits aux icônes</p>
+</div>
+
+<!-- Preview 2: Table scrollable -->
+<div class="card">
+  <h2>2. Tableaux à défilement horizontal</h2>
+  <div class="compare">
+    <div class="side old">
+      <div class="label">❌ Actuel</div>
+      <div style="font-size:11px;color:#888;overflow:hidden;text-overflow:ellipsis">
+        Les colonnes débordent ou sont trop petites pour être lisibles.
+      </div>
+    </div>
+    <div class="side new">
+      <div class="label">✅ Nouveau</div>
+      <div style="font-size:11px;color:#888">Scroll horizontal fluide avec les deux pouces</div>
+    </div>
+  </div>
+  <div class="screen">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0 8px">
+      <span style="font-weight:600;font-size:14px">Articles</span>
+      <button class="touch-btn sm" style="height:32px">+ Ajouter</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Article</th><th>Type</th><th>Prix m²</th><th> </th></tr></thead>
+        <tbody>
+          <tr><td>RASTA</td><td><span class="tag">Moquette</span></td><td>170</td><td>✎</td></tr>
+          <tr><td>AZURE</td><td><span class="tag">Tapis</span></td><td>300</td><td>✎</td></tr>
+          <tr><td>BAHAR</td><td><span class="tag">Tapis</span></td><td>160</td><td>✎</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size:10px;color:#555;text-align:center;padding:4px 0">← Glisser pour voir plus de colonnes →</div>
+  </div>
+</div>
+
+<!-- Preview 3: Card view for complex tables -->
+<div class="card">
+  <h2>3. Vue cartes (écrans très petits)</h2>
+  <p style="font-size:12px;color:#888;margin-bottom:8px">Alternative aux tableaux larges — chaque ligne devient une carte</p>
+  <div class="screen">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0 8px">
+      <span style="font-weight:600;font-size:14px">Ventes récentes</span>
+      <span style="font-size:12px;color:#888">Aujourd'hui</span>
+    </div>
+    <div class="card-row">
+      <div class="row-main">
+        <span class="label">ABDELLAH</span>
+        <span class="value">+ 8 400 DH</span>
+      </div>
+      <div class="row-details">
+        <span>Article <b>RASTA</b></span>
+        <span>m² <b>49.4</b></span>
+        <span>Date <b>14/05/26</b></span>
+        <span>Note <b>En cours</b></span>
+      </div>
+    </div>
+    <div class="card-row">
+      <div class="row-main">
+        <span class="label">GHAZOUANI</span>
+        <span class="value">+ 3 200 DH</span>
+      </div>
+      <div class="row-details">
+        <span>Article <b>AZURE</b></span>
+        <span>m² <b>10.6</b></span>
+        <span>Date <b>14/05/26</b></span>
+        <span>Note <b>—</b></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Preview 4: Touch targets -->
+<div class="card">
+  <h2>4. Zones tactiles agrandies</h2>
+  <div class="compare">
+    <div class="side old">
+      <div class="label">❌ Avant</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <span style="background:#333;padding:4px 8px;border-radius:4px;font-size:11px">Enregistrer</span>
+        <span style="background:#333;padding:4px 8px;border-radius:4px;font-size:11px">Annuler</span>
+        <span style="background:#333;padding:4px 8px;border-radius:4px;font-size:11px">+ Ajout</span>
+      </div>
+    </div>
+    <div class="side new">
+      <div class="label">✅ Après</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span class="touch-btn sm">Enregistrer</span>
+        <span class="touch-btn sm outline">Annuler</span>
+        <span class="touch-btn sm">+ Ajouter</span>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:#888;margin-top:8px">✅ Tous les boutons 44px minimum (recommandé Apple/Google)</p>
+</div>
+
+<!-- Preview 5: Formulaire -->
+<div class="card">
+  <h2>5. Formulaires empilés</h2>
+  <div class="screen">
+    <div style="display:grid;gap:8px">
+      <input placeholder="Client" style="background:#1e1e32;border:1px solid #333;border-radius:8px;padding:12px;color:#fff;font-size:14px;width:100%">
+      <input placeholder="Article" style="background:#1e1e32;border:1px solid #333;border-radius:8px;padding:12px;color:#fff;font-size:14px;width:100%">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <input placeholder="Longueur" style="background:#1e1e32;border:1px solid #333;border-radius:8px;padding:12px;color:#fff;font-size:14px;width:100%">
+        <input placeholder="Largeur" style="background:#1e1e32;border:1px solid #333;border-radius:8px;padding:12px;color:#fff;font-size:14px;width:100%">
+      </div>
+      <div class="toolbar">
+        <button class="touch-btn" style="flex:1">Enregistrer</button>
+        <button class="touch-btn outline" style="flex:1">Annuler</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Summary -->
+<div class="card" style="border-color:#7c5cfc">
+  <h2 style="color:#7c5cfc">Résumé des modifications</h2>
+  <table style="width:100%;font-size:13px;border-collapse:collapse;margin-top:8px">
+    <tr><td style="padding:6px 0">1. Navigation</td><td style="padding:6px 0;color:#7c5cfc">Bottom nav + icônes</td></tr>
+    <tr><td style="padding:6px 0;border-top:1px solid #222">2. Tableaux</td><td style="padding:6px 0;border-top:1px solid #222;color:#7c5cfc">Scroll horizontal + cartes</td></tr>
+    <tr><td style="padding:6px 0;border-top:1px solid #222">3. Boutons</td><td style="padding:6px 0;border-top:1px solid #222;color:#7c5cfc">44px hauteur minimum</td></tr>
+    <tr><td style="padding:6px 0;border-top:1px solid #222">4. Formulaires</td><td style="padding:6px 0;border-top:1px solid #222;color:#7c5cfc">Champs pleine largeur</td></tr>
+    <tr><td style="padding:6px 0;border-top:1px solid #222">5. Performance</td><td style="padding:6px 0;border-top:1px solid #222;color:#7c5cfc">Scroll natif fluide (pas de re-render)</td></tr>
+  </table>
+</div>
+
+<div class="footer-note">
+  Ouvrir ce fichier sur mobile pour tester le rendu réel<br>
+  <a href="#" onclick="document.body.style.transform='scale(0.5)';document.body.style.transformOrigin='top left'">Aperçu ultra-réduit</a>
+</div>
+
+</body>
+</html>
