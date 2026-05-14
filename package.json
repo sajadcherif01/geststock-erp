@@ -10,7 +10,7 @@
     "cap:sync": "npx cap sync",
     "cap:android": "npx cap open android",
     "cap:ios": "npx cap add ios",
-    "build:www": "node -e \"require('fs').cpSync('index.html','www/index.html');require('fs').cpSync('.nojekyll','www/.nojekyll',{recursive:true,errorOnExist:false});['data','docs'].forEach(d=>require('fs').cpSync(d,'www/'+d,{recursive:true,errorOnExist:false}))\"",
+    "build:www": "node -e \"require('fs').cpSync('index.html','www/index.html');require('fs').cpSync('style.css','www/style.css');require('fs').cpSync('app.js','www/app.js');require('fs').cpSync('.nojekyll','www/.nojekyll',{recursive:true,errorOnExist:false});['docs'].forEach(d=>require('fs').cpSync(d,'www/'+d,{recursive:true,errorOnExist:false}))\"",
     "build:apk": "npm run build:www && npx cap sync && cd android && gradlew assembleDebug"
   },
   "build": {
