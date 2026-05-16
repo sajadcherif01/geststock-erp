@@ -41,7 +41,6 @@
 <div class="shell">
   <div class="notif" id="notif"></div>
   <div class="readonly-banner">Mode Visiteur actif : consultation et impression seulement. Aucune modification des donnees n'est autorisee.</div>
-  <div class="security-banner" id="security-banner" style="display:none;margin-bottom:14px;padding:12px 16px;border-radius:var(--radius-sm);background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;font-size:13px;font-weight:600">&#9888; SECURITE : Mots de passe par defaut actifs (1234 / visiteur). <a href="#" onclick="event.preventDefault();document.querySelector('[data-panel=&quot;db-users&quot;]')?.click();document.querySelector('[data-main=&quot;database&quot;]')?.click()" style="color:#dc2626;font-weight:700">Changez-les dans Utilisateurs</a>.</div>
 
   <!-- HOME MODULE LAUNCHER -->
   <section id="home-view" class="home-view">
@@ -205,6 +204,10 @@
       <div class="field full-col">
         <label>Mot de passe</label>
         <input id="admin-code-input" type="password" placeholder="Mot de passe">
+      </div>
+      <div class="field full-col" style="flex-direction:row;align-items:center;gap:8px;padding:4px 0">
+        <input type="checkbox" id="remember-me" style="width:16px;height:16px;cursor:pointer;accent-color:var(--brand)">
+        <label for="remember-me" style="font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--ink)">Se souvenir de moi</label>
       </div>
     </div>
     <div class="modal-actions">

@@ -135,8 +135,8 @@ function rowToObj(tbl,row){
   }
   return obj;
 }
-function userToRow(u){return{id:u.id,name:u.name,role:u.role,password_hash:u.passwordHash}}
-function rowToUser(r){return{id:r.id,name:r.name,role:r.role,passwordHash:r.password_hash,_updatedAt:r.updated_at}}
+function userToRow(u){return{id:u.id,name:u.name,role:u.role,password_hash:u.passwordHash,keep_online:!!u.keepOnline}}
+function rowToUser(r){return{id:r.id,name:r.name,role:r.role,passwordHash:r.password_hash,_updatedAt:r.updated_at,keepOnline:!!r.keep_online}}
 // ===== SAFE SYNC FIX =====
 let isDataLoaded=false;
 
@@ -148,11 +148,12 @@ function requireAdmin(){
   notify('Action interdite. Connectez-vous avec un utilisateur Admin pour modifier les donnees.',true);
   return false;
 }
-function setLoggedUser(user){
+function setLoggedUser(user,remember){
   currentUser=user?{id:user.id,name:user.name,role:user.role}:null;
   currentRole=currentUser?.role==='admin'?'admin':'visitor';
-  if(currentUser)sessionStorage.setItem('gs3_user',JSON.stringify(currentUser));
-  else sessionStorage.removeItem('gs3_user');
+  const storage=remember?localStorage:sessionStorage;
+  if(currentUser)storage.setItem('gs3_user',JSON.stringify(currentUser));
+  else{localStorage.removeItem('gs3_user');sessionStorage.removeItem('gs3_user')}
   applyAccessMode();
 }
 async function sha256(text){
@@ -192,7 +193,6 @@ function applyAccessMode(){
     }
   });
   updateSyncStatus();
-  refreshSecurityBanner();
 }
 function updateSyncStatus(state){
   const chip=$('sync-chip');
@@ -222,7 +222,7 @@ function normalizePayload(payload){
   const sourceData=payload.data&&typeof payload.data==='object'?payload.data:payload;
   const next={version:String(payload.version||'1.0'),updatedAt:payload.updatedAt||new Date().toISOString(),users:Array.isArray(payload.users)?payload.users:users,data:{}};
   CKEYS.forEach(k=>{next.data[k]=Array.isArray(sourceData[k])?sourceData[k]:[]});
-  next.users=(next.users.length?next.users:DEFAULT_USERS).map(u=>({id:u.id||uid('usr'),name:String(u.name||'').trim().toLowerCase(),role:u.role==='admin'?'admin':'visitor',passwordHash:String(u.passwordHash||'')})).filter(u=>u.name&&u.passwordHash);
+  next.users=(next.users.length?next.users:DEFAULT_USERS).map(u=>({id:u.id||uid('usr'),name:String(u.name||'').trim().toLowerCase(),role:u.role==='admin'?'admin':'visitor',passwordHash:String(u.passwordHash||''),keepOnline:!!u.keepOnline})).filter(u=>u.name&&u.passwordHash);
   if(!next.users.length)next.users=DEFAULT_USERS;
   return next;
 }
@@ -257,7 +257,7 @@ function load(){
   try{const u=localStorage.getItem('gs3_users');users=u?JSON.parse(u):DEFAULT_USERS}catch(e){users=DEFAULT_USERS}
   try{const logs=localStorage.getItem('gs3_operation_audit');operationAuditLog=logs?JSON.parse(logs):[]}catch(e){operationAuditLog=[]}
   try{lastLocalUpdatedAt=localStorage.getItem('gs3_updated_at')||lastLocalUpdatedAt}catch(e){}
-  try{const su=sessionStorage.getItem('gs3_user');if(su){currentUser=JSON.parse(su);currentRole=currentUser.role==='admin'?'admin':'visitor'}}catch(e){}
+  try{const su=sessionStorage.getItem('gs3_user')||localStorage.getItem('gs3_user');if(su){currentUser=JSON.parse(su);currentRole=currentUser.role==='admin'?'admin':'visitor'}}catch(e){}
   db.articles=(db.articles||[]).map(a=>({...a,type:a.type||'tapis'}));
   db.rolls=db.rolls||[];
   db.rollCuts=db.rollCuts||[];
@@ -835,10 +835,8 @@ function renderDatabase(){
 }
 
 function renderUsersPanel(){
-  const securityWarning=hasDefaultPasswordUser()?`<div class="notif error-notif" style="display:block;margin-bottom:14px">Securite : changez les mots de passe par defaut avant toute utilisation professionnelle ou avant generation d'un executable.</div>`:'';
   $('db-users').innerHTML=`
     <div class="panel-head"><div><h2>Utilisateurs</h2><p>Gestion des comptes synchronises avec la base GitHub.</p></div></div>
-    ${securityWarning}
     <div class="quick-entry">
       <h4>Synchronisation Supabase temps reel</h4>
       <div class="form-grid">
@@ -2356,12 +2354,6 @@ function showForcePasswordChange(user){
 }
 window.showForcePasswordChange=showForcePasswordChange;
 
-function refreshSecurityBanner(){
-  const banner=$('security-banner');
-  if(banner)banner.style.display=hasDefaultPasswordUser()?'block':'none';
-}
-window.refreshSecurityBanner=refreshSecurityBanner;
-
 $('force-pw-save')?.addEventListener('click',async()=>{
   if(!requireAdmin())return;
   const pw=($('force-pw-input')?.value||'').trim();
@@ -2438,20 +2430,25 @@ function bindStaticEvents(){
     $('role-modal').style.display='flex';
     setTimeout(()=>$('login-name-input')?.focus(),50);
   });
-  $('role-logout')?.addEventListener('click',()=>{setLoggedUser(null);notify('Deconnecte')});
+  $('role-logout')?.addEventListener('click',()=>{
+    if(currentUser){const u=users.find(x=>x.id===currentUser.id);if(u)u.keepOnline=false;save()}
+    localStorage.removeItem('gs3_user');sessionStorage.removeItem('gs3_user');setLoggedUser(null);notify('Deconnecte')
+  });
   $('admin-code-cancel')?.addEventListener('click',()=>{if(currentUser)$('role-modal').style.display='none';});
   $('admin-code-ok')?.addEventListener('click',async()=>{
     const name=norm($('login-name-input').value).toLowerCase();
     const passwordHash=await sha256($('admin-code-input').value||'');
     const user=users.find(u=>u.name.toLowerCase()===name&&u.passwordHash===passwordHash);
+    const remember=$('remember-me')?.checked||false;
     if(user){
       $('role-modal').style.display='none';
-      setLoggedUser(user);
+      setLoggedUser(user,remember);
+      user.keepOnline=remember;
+      save();
       if(DEFAULT_PASSWORD_HASHES.has(user.passwordHash)){
         showForcePasswordChange(user);
         return;
       }
-      refreshSecurityBanner();
       notify(`Connecte : ${user.name}`);
     }else{
       notify('Nom ou mot de passe incorrect',true);
@@ -2755,7 +2752,13 @@ initSupabase();
 idbTryLoad();
 (supabaseClient?loadFromSupabase(true):Promise.resolve()).then(()=>{
   if(!currentUser){
-    $('role-modal').style.display='flex';
-    setTimeout(()=>$('login-name-input')?.focus(),80);
+    const keepUser=supabaseClient&&users.find(u=>u.keepOnline);
+    if(keepUser){
+      setLoggedUser(keepUser);
+      notify(`Connecte automatiquement : ${keepUser.name}`);
+    }else{
+      $('role-modal').style.display='flex';
+      setTimeout(()=>$('login-name-input')?.focus(),80);
+    }
   }
 });

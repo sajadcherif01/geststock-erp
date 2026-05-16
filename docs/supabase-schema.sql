@@ -19,8 +19,10 @@ create table if not exists public.geststock_users (
   name text not null,
   role text not null default 'visitor',
   password_hash text not null,
+  keep_online boolean default false,
   updated_at timestamptz not null default now()
 );
+alter table public.geststock_users add column if not exists keep_online boolean default false;
 
 create table if not exists public.geststock_articles (
   id text primary key,
