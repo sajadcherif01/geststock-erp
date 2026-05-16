@@ -2304,11 +2304,12 @@ async function buildJsPDF(type,name,entity,sum,r){
     LS(12,'bold');LC(c.vc[0],c.vc[1],c.vc[2]);L(c.val,cx+3,y+13);
   });
   y+=24;
+  y+=3;LS(10,'bold');LC(30,41,59);L('Op\u00e9rations ('+r.filteredOps.length+')',ml,y);y+=6;
   const opsHead=[{text:'#',colW:8},{text:'Date',colW:15},{text:'Type',colW:14},{text:'Article',colW:24},{text:'Couleur',colW:14},{text:'Dim.',colW:16},{text:'Site',colW:16},{text:'Qt\u00e9',colW:10},{text:'Surface',colW:14},{text:'Prix m2',colW:14},{text:'Total',colW:17}];
   const opsBody=r.filteredOps.map(x=>[String(r.filteredOps.indexOf(x)+1),x.date||'',operationKind(x),x.article||'',x.color||'-',(x.length||0)+'x'+(x.width||0),siteName(x.site),String(x.qty||0),sqm(surface(x.length,x.width,x.qty)),dh(x.pm2),dh(x.total)]);
   opsBody.push([{content:'TOTAL OP\u00c9RATIONS',colSpan:10,styles:{halign:'left',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}},'','','','','','','','','',{content:dh(r.totalOpsFiltered),styles:{halign:'right',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}}]);
   doc.autoTable({startY:y,head:[opsHead.map(h=>({content:h.text,styles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7,fontStyle:'bold',halign:'center',cellPadding:1.5}}))],body:opsBody,theme:'plain',margin:{left:ml,right:ml},tableWidth:w,columnStyles:opsHead.reduce((a,h)=>(a[h.text]={cellWidth:h.colW,halign:'center'},a),{}),headStyles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7},bodyStyles:{fontSize:7,cellPadding:1.5},alternateRowStyles:{fillColor:[248,250,252]},didDrawPage:function(d){y=d.cursor.y}});
-  y+=10;
+  y+=8;LS(10,'bold');LC(30,41,59);L('Paiements ('+r.filteredPay.length+')',ml,y);y+=6;
   const payHead=[{text:'#',colW:8},{text:'Date',colW:18},{text:'Montant',colW:22},{text:'Mode',colW:18},{text:'\u00c9ch\u00e9ance',colW:20},{text:'Statut',colW:18},{text:'Remarque',colW:w-8-18-22-18-20-18}];
   const payBody=r.filteredPay.map(p=>[String(r.filteredPay.indexOf(p)+1),p.date||'',dh(p.amount),p.mode||'',p.due||'-',paymentStatus(p),p.note||'-']);
   payBody.push([{content:'TOTAL PAIEMENTS',colSpan:2,styles:{halign:'left',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}},'',{content:dh(r.totalPayFiltered),styles:{halign:'right',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}},'','','','']);
