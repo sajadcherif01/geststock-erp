@@ -2233,28 +2233,71 @@ function printAccount(type){
   document.getElementById(type+'-print-options').style.display='none';
 }
 async function shareAccountPDF(type){
-  if(typeof html2pdf==='undefined')return alert('BibliothÃ¨que PDF non chargÃ©e. RÃ©essayez dans quelques secondes.');
+  if(typeof pdfMake==='undefined')return alert('BibliothÃ¨que PDF non chargÃ©e. RÃ©essayez dans quelques secondes.');
   const r=buildAccountReportHTML(type);if(!r.name)return alert('Veuillez sÃ©lectionner un '+(type==='client'?'client':'fournisseur'));
+  const name=r.name,sum=accountSummary(type,name),entity=(type==='client'?db.clients:db.suppliers).find(x=>x.name===name);
+  const dd={pageSize:'A4',pageMargins:[20,20,20,20],defaultStyle:{fontSize:9,font:'Roboto'},info:{title:'Compte '+name,author:'GestStock ERP'},content:[
+    {columns:[{width:'*',stack:[{text:'GestStock ERP',style:'hdrTitle'},{text:'Application de gestion de stock',style:'hdrSub'}]},{width:'auto',stack:[{text:'RELEVÉ DE COMPTE',style:'hdrBadge'},{text:new Date().toLocaleDateString('fr-MA')+' à '+new Date().toLocaleTimeString('fr-MA'),style:'hdrDate'}]}],style:'hdrWrap'},
+    {columns:[{width:'*',text:(type==='client'?'Client':'Fournisseur')+' : '+name+(entity?.city?' | '+entity.city:'')},{width:'auto',text:r.filteredOps.length+' opérations, '+r.filteredPay.length+' paiements'}],margin:[0,6,0,12]},
+    {columns:[
+      {width:'*',stack:[{text:'💰 Solde initial',style:'cl'},{text:r.init,style:'cv'}],style:'c c1'},
+      {width:'*',stack:[{text:'📊 Opérations (période)',style:'cl'},{text:dh(r.totalOpsFiltered),style:'cv'}],style:'c c2'},
+      {width:'*',stack:[{text:'💳 Paiements (période)',style:'cl'},{text:dh(r.totalPayFiltered),style:'cv'}],style:'c c3'},
+      {width:'*',stack:[{text:'⚖️ Solde restant',style:'cl'},{text:dh(sum.balance),style:'cv'}],style:'c '+(sum.balance>0?'c4':'c5')}
+    ],columnGap:8,margin:[0,0,0,12]},
+    {text:'Opérations ('+r.filteredOps.length+')',style:'secTitle'},
+    {table:{headerRows:1,widths:['auto','auto','auto','auto','auto','auto','auto','auto','auto','auto','auto'],body:[
+      [{text:'#',style:'th'},{text:'Date',style:'th'},{text:'Type',style:'th'},{text:'Article',style:'th'},{text:'Couleur',style:'th'},{text:'Dimensions',style:'th'},{text:'Site',style:'th'},{text:'Qté',style:'th'},{text:'Surface',style:'th'},{text:'Prix m2',style:'th'},{text:'Total',style:'th'}],
+      ...r.filteredOps.map((x,i)=>[
+        {text:String(i+1),style:'td'},{text:x.date||'',style:'td'},{text:operationKind(x),style:'td'},{text:x.article||'',style:'td'},{text:x.color||'-',style:'td'},
+        {text:(x.length||0)+' x '+(x.width||0),style:'td'},{text:siteName(x.site),style:'td'},{text:String(x.qty||0),style:'td'},{text:sqm(surface(x.length,x.width,x.qty)),style:'td'},
+        {text:dh(x.pm2),style:'td'},{text:dh(x.total),style:'td'}
+      ]),
+      [{text:'TOTAL OPÉRATIONS',colSpan:10,style:'tf'},{},{},{},{},{},{},{},{},{},{text:dh(r.totalOpsFiltered),style:'tf'}]
+    ]},layout:{hLineWidth:0,vLineWidth:0,defaultBorder:false,fillColor:function(i){return i===0?'#1e293b':i%2===0?'#f8fafc':null}}},
+    {text:'Paiements ('+r.filteredPay.length+')',style:'secTitle',margin:[0,12,0,0]},
+    {table:{headerRows:1,widths:['auto','auto','auto','auto','auto','auto','auto'],body:[
+      [{text:'#',style:'th'},{text:'Date',style:'th'},{text:'Montant',style:'th'},{text:'Mode',style:'th'},{text:'Échéance',style:'th'},{text:'Statut',style:'th'},{text:'Remarque',style:'th'}],
+      ...r.filteredPay.map((p,i)=>[
+        {text:String(i+1),style:'td'},{text:p.date||'',style:'td'},{text:dh(p.amount),style:'td'},{text:p.mode||'',style:'td'},{text:p.due||'-',style:'td'},
+        {text:paymentStatus(p),style:'td'},{text:p.note||'-',style:'td'}
+      ]),
+      [{text:'TOTAL PAIEMENTS',colSpan:2,style:'tf'},{},{text:dh(r.totalPayFiltered),style:'tf'},{},{},{},{}]
+    ]},layout:{hLineWidth:0,vLineWidth:0,defaultBorder:false,fillColor:function(i){return i===0?'#1e293b':i%2===0?'#f8fafc':null}}},
+    {text:'GestStock ERP - Document généré le '+new Date().toLocaleDateString('fr-MA'),style:'ft',margin:[0,20,0,0]}
+  ],styles:{
+    hdrWrap:{margin:[0,0,0,12],padding:[0,0,0,10],border:[false,false,false,true],lineHeight:1.4},
+    hdrTitle:{fontSize:16,bold:true,color:'#1e3a5f',margin:[0,0,0,2]},
+    hdrSub:{fontSize:8,color:'#6b7280'},
+    hdrBadge:{fontSize:8,bold:true,color:'#1e40af',background:'#eff6ff',alignment:'right',margin:[10,0,0,4]},
+    hdrDate:{fontSize:7,color:'#6b7280',alignment:'right'},
+    cl:{fontSize:7,bold:true,color:'#475569',margin:[0,0,0,2]},
+    cv:{fontSize:16,bold:true,color:'#111'},
+    c:{margin:[0,4],padding:[8,10]},
+    c1:{background:'#eff6ff'},c2:{background:'#f5f3ff'},c3:{background:'#fff7ed'},c4:{background:'#f0fdf4'},c5:{background:'#fef2f2'},
+    secTitle:{fontSize:11,bold:true,color:'#1e293b',margin:[0,0,0,4]},
+    th:{fontSize:7,bold:true,color:'#fff',fillColor:'#1e293b',padding:[4,6],margin:[0,0,0,0]},
+    td:{fontSize:8,color:'#334155',padding:[4,6]},
+    tf:{fontSize:8,bold:true,fillColor:'#f1f5f9',padding:[4,6]},
+    ft:{fontSize:7,color:'#94a3b8',alignment:'center'}
+  }};
   try{
-    const iframe=document.createElement('iframe');
-    iframe.style.position='fixed';iframe.style.visibility='hidden';iframe.style.top='0';iframe.style.left='0';iframe.style.width='800px';iframe.style.height='1200px';
-    iframe.srcdoc=r.html;
-    document.body.appendChild(iframe);
-    await new Promise(x=>setTimeout(x,2000));
-    const pdfBlob=await html2pdf().set({margin:[5,5,5,5],filename:`Compte-${r.name}.pdf`,image:{type:'jpeg',quality:.95},html2canvas:{scale:2,useCORS:true,logging:false,width:800,windowWidth:800},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(iframe.contentDocument.body).outputPdf('blob');
-    document.body.removeChild(iframe);
-    const file=new File([pdfBlob],`Compte-${r.name}.pdf`,{type:'application/pdf'});
+    const pdfBlob=await new Promise((res,rej)=>{
+      pdfMake.createPdf(dd).getBlob(b=>{res(b)},rej);
+      setTimeout(()=>rej(new Error('Timeout')),15000);
+    });
+    const file=new File([pdfBlob],`Compte-${name}.pdf`,{type:'application/pdf'});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
-      await navigator.share({files:[file],title:`Compte ${r.name}`});
+      await navigator.share({files:[file],title:`Compte ${name}`});
     }else{
       const url=URL.createObjectURL(pdfBlob);
-      const a=document.createElement('a');a.href=url;a.download=`Compte-${r.name}.pdf`;a.click();
+      const a=document.createElement('a');a.href=url;a.download=`Compte-${name}.pdf`;a.click();
       URL.revokeObjectURL(url);
       notify('PDF tÃ©lÃ©chargÃ©. Ouvrez WhatsApp pour le partager.');
     }
   }catch(e){
     notify('Erreur gÃ©nÃ©ration PDF: '+e.message,true);
-    const txt='*Compte '+(type==='client'?'Client':'Fournisseur')+'* : '+r.name+'\n\n*Solde initial* : '+r.init+'\n*Total opÃ©rations* : '+dh(r.totalOpsFiltered)+'\n*Total paiements* : '+dh(r.totalPayFiltered)+'\n*Solde restant* : '+r.balance+'\n\n_EnvoyÃ© depuis GestStock ERP_';
+    const txt='*Compte '+(type==='client'?'Client':'Fournisseur')+'* : '+name+'\n\n*Solde initial* : '+r.init+'\n*Total opÃ©rations* : '+dh(r.totalOpsFiltered)+'\n*Total paiements* : '+dh(r.totalPayFiltered)+'\n*Solde restant* : '+dh(sum.balance)+'\n\n_EnvoyÃ© depuis GestStock ERP_';
     window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,'_blank');
   }
   document.getElementById(type+'-print-options').style.display='none';
