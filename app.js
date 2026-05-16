@@ -1185,7 +1185,8 @@ function renderAccountPanel(type,title){
     </div>
     <div class="toolbar">
       <button class="btn primary" onclick="saveAccountPayment('${type}')">Ajouter paiement</button>
-      <button class="btn alt" onclick="togglePrintOptions('${type}')">Impression Impression</button>
+      <button class="btn alt" onclick="togglePrintOptions('${type}')">Imprimer</button>
+      <button class="btn warn" onclick="shareAccountPDF('${type}')">PDF WhatsApp</button>
     </div>
     <div id="${type}-print-options" style="display:none;background:linear-gradient(135deg,#f0f7ff,#faf5ff);border:1px solid #bfdbfe;border-radius:var(--radius);padding:14px 16px;margin-bottom:14px">
       <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:6px">Impression Options d'impression</div>
@@ -2324,6 +2325,76 @@ tr:nth-child(even) td{background:#fafafa}
 </body></html>`);
   w.document.close();
   // Fermer le panel après impression
+  document.getElementById(type+'-print-options').style.display='none';
+}
+
+async function shareAccountPDF(type){
+  const name=view[type+'Account'];
+  if(!name)return alert('Veuillez sÃ©lectionner un '+(type==='client'?'client':'fournisseur'));
+  if(typeof html2pdf==='undefined')return alert('BibliothÃ¨que PDF non chargÃ©e. RÃ©essayez dans quelques secondes.');
+  const sum=accountSummary(type,name);
+  const entity=(type==='client'?db.clients:db.suppliers).find(x=>x.name===name);
+  const fromVal=$(type+'-print-from')?.value||'',toVal=$(type+'-print-to')?.value||'',hidePm2=$(type+'-print-hide-pm2')?.checked||false;
+  const filteredOps=sum.ops.filter(x=>{if(!x.date)return true;if(fromVal&&x.date<fromVal)return false;if(toVal&&x.date>toVal)return false;return true});
+  const filteredPay=sum.payments.filter(p=>{if(!p.date)return true;if(fromVal&&p.date<fromVal)return false;if(toVal&&p.date>toVal)return false;return true});
+  const totalOpsFiltered=filteredOps.reduce((s,x)=>s+num(x.total),0);
+  const totalPayFiltered=filteredPay.reduce((s,p)=>{if(p.deductNow===false)return p.paidStatus==='paid'?s+num(p.amount):s;return s+num(p.amount)},0);
+  const periodLabel=fromVal||toVal?`${fromVal||'dÃ©but'} -> ${toVal||'aujourd\'hui'}`:'Toutes les dates';
+  const opsRows=filteredOps.map((x,i)=>{const dim=`${x.length||0} x ${x.width||0} cm`;const pm2=hidePm2?'':`<td>${dh(x.pm2)}/m2</td>`;return`<tr><td>${i+1}</td><td>${x.date}</td><td>${operationKind(x)}</td><td>${x.article}</td><td>${x.color||'-'}</td><td>${dim}</td><td>${siteName(x.site)}</td><td>${x.qty}</td><td>${sqm(surface(x.length,x.width,x.qty))}</td>${pm2}<td>${dh(x.total)}</td></tr>`}).join('')||`<tr><td colspan="${hidePm2?9:10}" style="text-align:center;color:#9ca3af;padding:12px">Aucune opÃ©ration</td></tr>`;
+  const payRows=filteredPay.map((p,i)=>`<tr><td>${i+1}</td><td>${p.date}</td><td>${dh(p.amount)}</td><td>${p.mode}</td><td>${p.due||'-'}</td><td>${paymentStatus(p)}</td><td>${p.note||'-'}</td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:12px">Aucun paiement</td></tr>';
+  const opsHead=hidePm2?'<th>#</th><th>Date</th><th>Type</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Site</th><th>QtÃ©</th><th>Surface</th><th>Total</th>':'<th>#</th><th>Date</th><th>Type</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Site</th><th>QtÃ©</th><th>Surface</th><th>Prix m2</th><th>Total</th>';
+  const opsTotalColspan=hidePm2?9:10;
+  const dateStr=new Date().toLocaleDateString('fr-MA',{day:'2-digit',month:'long',year:'numeric'});
+  const timeStr=new Date().toLocaleTimeString('fr-MA');
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${name} - ${periodLabel}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;padding:24px;color:#111;font-size:13px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #1a56db}
+.header-left h1{font-size:20px;font-weight:700;color:#1a56db;margin-bottom:2px}.header-left p{font-size:12px;color:#6b7280}
+.header-right{text-align:right;font-size:11px;color:#6b7280;line-height:1.7}
+.period-badge{display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;margin-top:4px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+.card{border:1px solid #e5e7eb;padding:12px;border-radius:10px;background:#f9fafb}
+.card.green{border-color:#6ee7b7;background:#ecfdf5}.card.red{border-color:#fca5a5;background:#fef2f2}
+.k{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;font-weight:600}.v{font-size:20px;font-weight:700;margin-top:5px}
+h2{font-size:14px;font-weight:700;margin:20px 0 8px}table{width:100%;border-collapse:collapse;margin-top:6px}
+th{background:#f8fafc;padding:8px 10px;text-align:left;border:1px solid #e5e7eb;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280}
+td{border:1px solid #e5e7eb;padding:7px 10px;font-size:12px;vertical-align:middle}
+tfoot td{background:#f0fdf4;font-weight:700}tr:nth-child(even) td{background:#fafafa}
+.footer{margin-top:24px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af;text-align:center}
+@media print{body{padding:12px}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}.card{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body>
+<div class="header"><div class="header-left"><h1>${type==='client'?'Compte client':'Compte fournisseur'} - ${name}</h1><p>Ville : ${entity?.city||'-'}</p><div class="period-badge">PÃ©riode : ${periodLabel}</div></div><div class="header-right">GÃ©nÃ©rÃ© le ${dateStr} Ã  ${timeStr}${hidePm2?'<br><span style="color:#d97706;font-weight:600">Prix m2 masquÃ©</span>':''}</div></div>
+<div class="cards"><div class="card"><div class="k">Solde initial</div><div class="v">${dh(sum.init)}</div></div><div class="card"><div class="k">OpÃ©rations (pÃ©riode)</div><div class="v">${dh(totalOpsFiltered)}</div></div><div class="card"><div class="k">Paiements (pÃ©riode)</div><div class="v">${dh(totalPayFiltered)}</div></div><div class="card ${sum.balance>0?'green':'red'}"><div class="k">Solde restant</div><div class="v" style="color:${sum.balance>0?'#059669':'#dc2626'}">${dh(sum.balance)}</div></div></div>
+<h2>OpÃ©rations (${filteredOps.length} ligne(s))</h2>
+<table><thead><tr>${opsHead}</tr></thead><tbody>${opsRows}</tbody><tfoot><tr><td colspan="${opsTotalColspan}"><strong>TOTAL OPÃ‰RATIONS</strong></td><td><strong>${dh(totalOpsFiltered)}</strong></td></tr></tfoot></table>
+<h2>Paiements (${filteredPay.length} ligne(s))</h2>
+<table><thead><tr><th>#</th><th>Date</th><th>Montant</th><th>Mode</th><th>Ã‰chÃ©ance</th><th>Statut</th><th>Remarque</th></tr></thead><tbody>${payRows}</tbody><tfoot><tr><td colspan="2"><strong>TOTAL PAIEMENTS</strong></td><td><strong>${dh(totalPayFiltered)}</strong></td><td colspan="4"></td></tr></tfoot></table>
+<div class="footer">GestStock ERP - Document gÃ©nÃ©rÃ© le ${dateStr} | ${periodLabel}</div>
+</body></html>`;
+  try{
+    const iframe=document.createElement('iframe');
+    iframe.style.position='fixed';iframe.style.left='-9999px';iframe.style.top='0';iframe.style.width='800px';iframe.style.height='0';
+    document.body.appendChild(iframe);
+    const doc=iframe.contentDocument||iframe.contentWindow.document;
+    doc.open();doc.write(html);doc.close();
+    await new Promise(r=>setTimeout(r,800));
+    const pdfBlob=await html2pdf().set({margin:[10,10,10,10],filename:`Compte-${name}.pdf`,html2canvas:{scale:2,useCORS:true,logging:false},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(iframe.contentDocument.body).outputPdf('blob');
+    document.body.removeChild(iframe);
+    const file=new File([pdfBlob],`Compte-${name}.pdf`,{type:'application/pdf'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:`Compte ${name}`});
+    }else{
+      const url=URL.createObjectURL(pdfBlob);
+      const a=document.createElement('a');a.href=url;a.download=`Compte-${name}.pdf`;a.click();
+      URL.revokeObjectURL(url);
+      notify('PDF tÃ©lÃ©chargÃ©. Ouvrez WhatsApp pour le partager.');
+    }
+  }catch(e){
+    notify('Erreur gÃ©nÃ©ration PDF: '+e.message,true);
+    const text=`*Compte ${type==='client'?'Client':'Fournisseur'}* : ${name}\n\n*Solde initial* : ${dh(sum.init)}\n*Total opÃ©rations* : ${dh(sum.totalOps)}\n*Total paiements* : ${dh(sum.totalPay)}\n*Solde restant* : ${dh(sum.balance)}\n\n_EnvoyÃ© depuis GestStock ERP_`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank');
+  }
   document.getElementById(type+'-print-options').style.display='none';
 }
 
