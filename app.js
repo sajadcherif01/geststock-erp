@@ -2223,7 +2223,7 @@ tfoot td{background:#f0fdf4;font-weight:700}tr:nth-child(even) td{background:#fa
 <h2>Paiements <span>(${filteredPay.length} ligne(s)${fromVal||toVal?' - periode filtree':''})</span></h2>
 <table><thead><tr><th>#</th><th>Date</th><th>Montant</th><th>Mode</th><th>Echeance</th><th>Statut</th><th>Remarque</th></tr></thead><tbody>${payRows}</tbody><tfoot><tr><td colspan="2"><strong>TOTAL PAIEMENTS</strong></td><td><strong>${dh(totalPayFiltered)}</strong></td><td colspan="4"></td></tr></tfoot></table>
 <div class="footer">GestStock ERP - Document genere le ${dateStr} a ${timeStr} | Periode : ${periodLabel}</div>
-</body></html>`,name,filteredOps,filteredPay,totalOpsFiltered,totalPayFiltered};
+</body></html>`,name,filteredOps,filteredPay,totalOpsFiltered,totalPayFiltered,fromVal,toVal,periodLabel};
 }
 function printAccount(type){
   const r=buildAccountReportHTML(type);if(!r.name)return alert('Veuillez sÃ©lectionner un '+(type==='client'?'client':'fournisseur'));
@@ -2264,16 +2264,18 @@ async function buildJsPDF(type,name,entity,sum,r){
   const LC=(r,g,b)=>{doc.setTextColor(r,g,b)};
   const dateStr=new Date().toLocaleDateString('fr-MA',{day:'2-digit',month:'long',year:'numeric'});
   const timeStr=new Date().toLocaleTimeString('fr-MA');
+  const dmy=s=>s?s.split('-').reverse().join('/'):'';
+  const rangeStr=r.fromVal||r.toVal?'Du '+dmy(r.fromVal)+' au '+dmy(r.toVal):'Toutes les dates';
   let y=mt;
-  doc.setFillColor(30,58,95);doc.rect(0,0,210,30,'F');
-  LS(18,'bold');LC(255,255,255);L('GestStock ERP',ml,20);
-  LS(8,'normal');LC(200,215,240);L('Application de gestion de stock',ml,27);
-  doc.setFillColor(59,130,246);doc.roundedRect(155,8,38,7,2,2,'F');
-  LS(7,'bold');LC(255,255,255);L('RELEVÉ DE COMPTE',165,13.5,{align:'center'});
-  LS(7,'normal');LC(200,215,240);L(dateStr+' à '+timeStr,190,13.5,{align:'right'});
-  y=38;
+  doc.setFillColor(30,58,95);doc.rect(0,0,210,34,'F');
+  LS(18,'bold');LC(255,255,255);L('SAYFOFLEX ERP',ml,20);
+  LS(7,'normal');LC(200,215,240);L('Application de gestion de l\'entreprise professionnel dÃ©veloppÃ© par Sayfo Flex',ml,28);
+  doc.setFillColor(59,130,246);doc.roundedRect(150,8,44,7,2,2,'F');
+  LS(7,'bold');LC(255,255,255);L('RelevÃ©e de compte',163,13.5,{align:'center'});
+  LS(7,'normal');LC(200,215,240);L(rangeStr,190,22,{align:'right'});
+  y=42;
   LS(10,'bold');LC(30,41,59);L((type==='client'?'Client':'Fournisseur')+' : '+name+(entity?.city?' | '+entity.city:''),ml,y);
-  LS(8,'normal');LC(100,116,139);L(r.filteredOps.length+' opérations, '+r.filteredPay.length+' paiements',190,y,{align:'right'});
+  LS(8,'normal');LC(100,116,139);L(r.filteredOps.length+' opÃ©rations, '+r.filteredPay.length+' paiements',190,y,{align:'right'});
   y+=8;
   const cards=[
     {bg:[239,246,255],cl:'#475569',lb:'Solde initial',val:r.init,vc:[29,78,216]},
@@ -2299,7 +2301,7 @@ async function buildJsPDF(type,name,entity,sum,r){
   payBody.push([{content:'TOTAL PAIEMENTS',colSpan:2,styles:{halign:'left',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}},'',{content:dh(r.totalPayFiltered),styles:{halign:'right',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}},'','','','']);
   doc.autoTable({startY:y,head:[payHead.map(h=>({content:h.text,styles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7,fontStyle:'bold',halign:'center',cellPadding:1.5}}))],body:payBody,theme:'plain',margin:{left:ml,right:ml},tableWidth:w,columnStyles:payHead.reduce((a,h)=>(a[h.text]={cellWidth:h.colW,halign:'center'},a),{}),headStyles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7},bodyStyles:{fontSize:7,cellPadding:1.5},alternateRowStyles:{fillColor:[248,250,252]},didDrawPage:function(d){y=d.cursor.y}});
   LS(6,'normal');LC(148,163,184);
-  L('GestStock ERP — Document généré le '+dateStr,105,y+10,{align:'center'});
+  L('SAYFOFLEX ERP — Document généré le '+dateStr,105,y+10,{align:'center'});
   return{doc,mm:doc.internal.pageSize};
 }
 
