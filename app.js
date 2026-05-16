@@ -2222,7 +2222,7 @@ tfoot td{background:#f0fdf4;font-weight:700}tr:nth-child(even) td{background:#fa
 <table><thead><tr>${opsHead.replace('<th>Article</th>','<th>Type</th><th>Article/Frais</th>')}</tr></thead><tbody>${opsRows}</tbody><tfoot><tr><td colspan="${opsTotalColspan}"><strong>TOTAL OPERATIONS</strong></td><td><strong>${dh(totalOpsFiltered)}</strong></td></tr></tfoot></table>
 <h2>Paiements <span>(${filteredPay.length} ligne(s)${fromVal||toVal?' - periode filtree':''})</span></h2>
 <table><thead><tr><th>#</th><th>Date</th><th>Montant</th><th>Mode</th><th>Echeance</th><th>Statut</th><th>Remarque</th></tr></thead><tbody>${payRows}</tbody><tfoot><tr><td colspan="2"><strong>TOTAL PAIEMENTS</strong></td><td><strong>${dh(totalPayFiltered)}</strong></td><td colspan="4"></td></tr></tfoot></table>
-<div class="footer">GestStock ERP - Document genere le ${dateStr} a ${timeStr} | Periode : ${periodLabel}</div>
+<div class="footer">SayfoFlex - Document genere le ${dateStr} a ${timeStr} | Periode : ${periodLabel}</div>
 </body></html>`,name,filteredOps,filteredPay,totalOpsFiltered,totalPayFiltered,fromVal,toVal,periodLabel};
 }
 function printAccount(type){
@@ -2233,8 +2233,8 @@ function printAccount(type){
   document.getElementById(type+'-print-options').style.display='none';
 }
 async function shareAccountPDF(type){
-  const r=buildAccountReportHTML(type);if(!r.name)return alert('Veuillez sÃ©lectionner un '+(type==='client'?'client':'fournisseur'));
-  if(typeof jspdf?.jsPDF==='undefined')return alert('BibliothÃ¨que PDF non chargÃ©e. RafraÃ®chissez la page et rÃ©essayez.');
+  const r=buildAccountReportHTML(type);if(!r.name)return alert('Veuillez s\u00e9lectionner un '+(type==='client'?'client':'fournisseur'));
+  if(typeof jspdf?.jsPDF==='undefined')return alert('Biblioth\u00e8que PDF non charg\u00e9e. Rafra\u00eechissez la page et r\u00e9essayez.');
   const name=r.name,sum=accountSummary(type,name),entity=(type==='client'?db.clients:db.suppliers).find(x=>x.name===name);
   try{
     const{doc,mm}=await buildJsPDF(type,name,entity,sum,r);
@@ -2246,11 +2246,11 @@ async function shareAccountPDF(type){
       const url=URL.createObjectURL(pdfBlob);
       const a=document.createElement('a');a.href=url;a.download=`Compte-${name}.pdf`;a.click();
       URL.revokeObjectURL(url);
-      notify('PDF tÃ©lÃ©chargÃ©. Ouvrez WhatsApp pour le partager.');
+      notify('PDF t\u00e9l\u00e9charg\u00e9. Ouvrez WhatsApp pour le partager.');
     }
   }catch(e){
-    notify('Erreur gÃ©nÃ©ration PDF: '+e.message,true);
-    const txt='*Compte '+(type==='client'?'Client':'Fournisseur')+'* : '+name+'\n\n*Solde initial* : '+r.init+'\n*Total opÃ©rations* : '+dh(r.totalOpsFiltered)+'\n*Total paiements* : '+dh(r.totalPayFiltered)+'\n*Solde restant* : '+dh(sum.balance)+'\n\n_EnvoyÃ© depuis GestStock ERP_';
+    notify('Erreur g\u00e9n\u00e9ration PDF: '+e.message,true);
+    const txt='*Compte '+(type==='client'?'Client':'Fournisseur')+'* : '+name+'\n\n*Solde initial* : '+r.init+'\n*Total op\u00e9rations* : '+dh(r.totalOpsFiltered)+'\n*Total paiements* : '+dh(r.totalPayFiltered)+'\n*Solde restant* : '+dh(sum.balance)+'\n\n_Envoy\u00e9 depuis SayfoFlex ERP_';
     window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,'_blank');
   }
   document.getElementById(type+'-print-options').style.display='none';
@@ -2266,42 +2266,51 @@ async function buildJsPDF(type,name,entity,sum,r){
   const timeStr=new Date().toLocaleTimeString('fr-MA');
   const dmy=s=>s?s.split('-').reverse().join('/'):'';
   const rangeStr=r.fromVal||r.toVal?'Du '+dmy(r.fromVal)+' au '+dmy(r.toVal):'Toutes les dates';
+  try{
+    const res=await fetch('fonts/cambriab.ttf');
+    const buf=await res.arrayBuffer();
+    const bytes=new Uint8Array(buf);
+    let bin='';for(let i=0;i<bytes.length;i++)bin+=String.fromCharCode(bytes[i]);
+    doc.addFileToVFS('cambriab.ttf',btoa(bin));
+    doc.addFont('cambriab.ttf','Cambria','bold');
+  }catch(e){/* Cambria non disponible, fallback times */}
   let y=mt;
   doc.setFillColor(30,58,95);doc.rect(0,0,210,34,'F');
-  LS(18,'bold');LC(255,255,255);L('SAYFOFLEX ERP',ml,20);
-  LS(7,'normal');LC(200,215,240);L('Application de gestion de l\'entreprise professionnel dÃ©veloppÃ© par Sayfo Flex',ml,28);
+  doc.setFont('Cambria','bold');LS(20,'bold');LC(255,255,255);L('SayfoFlex',ml,20);
+  doc.setFont('helvetica','normal');LS(7,'normal');LC(200,215,240);L('Application de gestion de l\u2019entreprise professionnel d\u00e9velopp\u00e9 par Sayfo Flex',ml,28);
   doc.setFillColor(59,130,246);doc.roundedRect(150,8,44,7,2,2,'F');
-  LS(7,'bold');LC(255,255,255);L('RelevÃ©e de compte',163,13.5,{align:'center'});
-  LS(7,'normal');LC(200,215,240);L(rangeStr,190,22,{align:'right'});
+  doc.setFont('helvetica','bold');LS(7,'bold');LC(255,255,255);L('Relev\u00e9e de compte',163,13.5,{align:'center'});
+  doc.setFont('helvetica','normal');LS(7,'normal');LC(200,215,240);L(rangeStr,190,22,{align:'right'});
   y=42;
   LS(10,'bold');LC(30,41,59);L((type==='client'?'Client':'Fournisseur')+' : '+name+(entity?.city?' | '+entity.city:''),ml,y);
-  LS(8,'normal');LC(100,116,139);L(r.filteredOps.length+' opÃ©rations, '+r.filteredPay.length+' paiements',190,y,{align:'right'});
+  LS(8,'normal');LC(100,116,139);L(r.filteredOps.length+' op\u00e9rations, '+r.filteredPay.length+' paiements',190,y,{align:'right'});
   y+=8;
   const cards=[
-    {bg:[239,246,255],cl:'#475569',lb:'Solde initial',val:r.init,vc:[29,78,216]},
-    {bg:[245,243,255],cl:'#475569',lb:'Opérations (période)',val:dh(r.totalOpsFiltered),vc:[124,58,237]},
-    {bg:[255,247,237],cl:'#475569',lb:'Paiements (période)',val:dh(r.totalPayFiltered),vc:[234,88,12]},
-    {bg:sum.balance>0?[240,253,244]:[254,242,242],cl:'#475569',lb:'Solde restant',val:dh(sum.balance),vc:sum.balance>0?[22,163,74]:[220,38,38]}
+    {bg:[239,246,255],lb:'Solde initial',val:r.init,vc:[29,78,216]},
+    {bg:[245,243,255],lb:'Op\u00e9rations (p\u00e9riode)',val:dh(r.totalOpsFiltered),vc:[124,58,237]},
+    {bg:[255,247,237],lb:'Paiements (p\u00e9riode)',val:dh(r.totalPayFiltered),vc:[234,88,12]},
+    {bg:sum.balance>0?[240,253,244]:[254,242,242],lb:'Solde restant',val:dh(sum.balance),vc:sum.balance>0?[22,163,74]:[220,38,38]}
   ];
   const cw=(w-12)/4;
   cards.forEach((c,i)=>{
     const cx=ml+i*(cw+4)+1;
     doc.setFillColor(c.bg[0],c.bg[1],c.bg[2]);doc.roundedRect(cx,y,cw,18,2,2,'F');
-    LS(6,'bold');LC(71,85,105);L(c.lb,cx+3,y+3.5);
+    doc.setFillColor(c.vc[0],c.vc[1],c.vc[2]);doc.circle(cx+3.5,y+2.5,1.2,'F');
+    LS(6,'bold');LC(71,85,105);L(c.lb,cx+7,y+3.5);
     LS(12,'bold');LC(c.vc[0],c.vc[1],c.vc[2]);L(c.val,cx+3,y+13);
   });
   y+=24;
-  const opsHead=[{text:'#',colW:8},{text:'Date',colW:15},{text:'Type',colW:14},{text:'Article',colW:24},{text:'Couleur',colW:14},{text:'Dim.',colW:16},{text:'Site',colW:16},{text:'Qté',colW:10},{text:'Surface',colW:14},{text:'Prix m2',colW:14},{text:'Total',colW:17}];
+  const opsHead=[{text:'#',colW:8},{text:'Date',colW:15},{text:'Type',colW:14},{text:'Article',colW:24},{text:'Couleur',colW:14},{text:'Dim.',colW:16},{text:'Site',colW:16},{text:'Qt\u00e9',colW:10},{text:'Surface',colW:14},{text:'Prix m2',colW:14},{text:'Total',colW:17}];
   const opsBody=r.filteredOps.map(x=>[String(r.filteredOps.indexOf(x)+1),x.date||'',operationKind(x),x.article||'',x.color||'-',(x.length||0)+'x'+(x.width||0),siteName(x.site),String(x.qty||0),sqm(surface(x.length,x.width,x.qty)),dh(x.pm2),dh(x.total)]);
-  opsBody.push([{content:'TOTAL OPÉRATIONS',colSpan:10,styles:{halign:'left',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}},'','','','','','','','','',{content:dh(r.totalOpsFiltered),styles:{halign:'right',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}}]);
+  opsBody.push([{content:'TOTAL OP\u00c9RATIONS',colSpan:10,styles:{halign:'left',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}},'','','','','','','','','',{content:dh(r.totalOpsFiltered),styles:{halign:'right',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}}]);
   doc.autoTable({startY:y,head:[opsHead.map(h=>({content:h.text,styles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7,fontStyle:'bold',halign:'center',cellPadding:1.5}}))],body:opsBody,theme:'plain',margin:{left:ml,right:ml},tableWidth:w,columnStyles:opsHead.reduce((a,h)=>(a[h.text]={cellWidth:h.colW,halign:'center'},a),{}),headStyles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7},bodyStyles:{fontSize:7,cellPadding:1.5},alternateRowStyles:{fillColor:[248,250,252]},didDrawPage:function(d){y=d.cursor.y}});
   y+=10;
-  const payHead=[{text:'#',colW:8},{text:'Date',colW:18},{text:'Montant',colW:22},{text:'Mode',colW:18},{text:'Échéance',colW:20},{text:'Statut',colW:18},{text:'Remarque',colW:w-8-18-22-18-20-18}];
+  const payHead=[{text:'#',colW:8},{text:'Date',colW:18},{text:'Montant',colW:22},{text:'Mode',colW:18},{text:'\u00c9ch\u00e9ance',colW:20},{text:'Statut',colW:18},{text:'Remarque',colW:w-8-18-22-18-20-18}];
   const payBody=r.filteredPay.map(p=>[String(r.filteredPay.indexOf(p)+1),p.date||'',dh(p.amount),p.mode||'',p.due||'-',paymentStatus(p),p.note||'-']);
   payBody.push([{content:'TOTAL PAIEMENTS',colSpan:2,styles:{halign:'left',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}},'',{content:dh(r.totalPayFiltered),styles:{halign:'right',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}},'','','','']);
   doc.autoTable({startY:y,head:[payHead.map(h=>({content:h.text,styles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7,fontStyle:'bold',halign:'center',cellPadding:1.5}}))],body:payBody,theme:'plain',margin:{left:ml,right:ml},tableWidth:w,columnStyles:payHead.reduce((a,h)=>(a[h.text]={cellWidth:h.colW,halign:'center'},a),{}),headStyles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7},bodyStyles:{fontSize:7,cellPadding:1.5},alternateRowStyles:{fillColor:[248,250,252]},didDrawPage:function(d){y=d.cursor.y}});
   LS(6,'normal');LC(148,163,184);
-  L('SAYFOFLEX ERP — Document généré le '+dateStr,105,y+10,{align:'center'});
+  L('SayfoFlex \u2014 Document g\u00e9n\u00e9r\u00e9 le '+dateStr,105,y+10,{align:'center'});
   return{doc,mm:doc.internal.pageSize};
 }
 
