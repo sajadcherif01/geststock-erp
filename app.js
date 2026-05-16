@@ -2237,12 +2237,11 @@ async function shareAccountPDF(type){
   const r=buildAccountReportHTML(type);if(!r.name)return alert('Veuillez sÃ©lectionner un '+(type==='client'?'client':'fournisseur'));
   try{
     const iframe=document.createElement('iframe');
-    iframe.style.position='fixed';iframe.style.left='-9999px';iframe.style.top='0';iframe.style.width='800px';iframe.style.height='1200px';
+    iframe.style.position='fixed';iframe.style.visibility='hidden';iframe.style.top='0';iframe.style.left='0';iframe.style.width='800px';iframe.style.height='1200px';
+    iframe.srcdoc=r.html;
     document.body.appendChild(iframe);
-    const doc=iframe.contentDocument||iframe.contentWindow.document;
-    doc.open();doc.write(r.html);doc.close();
-    await new Promise(x=>setTimeout(x,1200));
-    const pdfBlob=await html2pdf().set({margin:[5,5,5,5],filename:`Compte-${r.name}.pdf`,html2canvas:{scale:2,useCORS:true,logging:false,width:800},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(iframe.contentDocument.body).outputPdf('blob');
+    await new Promise(x=>setTimeout(x,2000));
+    const pdfBlob=await html2pdf().set({margin:[5,5,5,5],filename:`Compte-${r.name}.pdf`,image:{type:'jpeg',quality:.95},html2canvas:{scale:2,useCORS:true,logging:false,width:800,windowWidth:800},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(iframe.contentDocument.body).outputPdf('blob');
     document.body.removeChild(iframe);
     const file=new File([pdfBlob],`Compte-${r.name}.pdf`,{type:'application/pdf'});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
