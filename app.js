@@ -2266,6 +2266,7 @@ async function buildJsPDF(type,name,entity,sum,r){
   const timeStr=new Date().toLocaleTimeString('fr-MA');
   const dmy=s=>s?s.split('-').reverse().join('/'):'';
   const rangeStr=r.fromVal||r.toVal?'Du '+dmy(r.fromVal)+' au '+dmy(r.toVal):'Toutes les dates';
+  let cambriaOk=false;
   try{
     const res=await fetch('fonts/cambriab.ttf');
     const buf=await res.arrayBuffer();
@@ -2273,10 +2274,12 @@ async function buildJsPDF(type,name,entity,sum,r){
     let bin='';for(let i=0;i<bytes.length;i++)bin+=String.fromCharCode(bytes[i]);
     doc.addFileToVFS('cambriab.ttf',btoa(bin));
     doc.addFont('cambriab.ttf','Cambria','bold');
-  }catch(e){/* Cambria non disponible, fallback times */}
+    cambriaOk=true;
+  }catch(e){/* Cambria non disponible */}
   let y=mt;
   doc.setFillColor(30,58,95);doc.rect(0,0,210,34,'F');
-  doc.setFont('Cambria','bold');LS(20,'bold');LC(255,255,255);L('SayfoFlex',ml,20);
+  if(cambriaOk)doc.setFont('Cambria','bold');else doc.setFont('helvetica','bold');
+  LS(20,'bold');LC(255,255,255);L('SayfoFlex',ml,20);
   doc.setFont('helvetica','normal');LS(7,'normal');LC(200,215,240);L('Application de gestion de l\u2019entreprise professionnel d\u00e9velopp\u00e9 par Sayfo Flex',ml,28);
   doc.setFillColor(59,130,246);doc.roundedRect(150,8,44,7,2,2,'F');
   doc.setFont('helvetica','bold');LS(7,'bold');LC(255,255,255);L('Relev\u00e9e de compte',163,13.5,{align:'center'});
