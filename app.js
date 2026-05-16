@@ -2177,249 +2177,86 @@ function togglePrintOptions(type){
   const el=document.getElementById(type+'-print-options');
   if(el)el.style.display=el.style.display==='none'?'block':'none';
 }
-function printAccount(type){
+function buildAccountReportHTML(type){
   const name=view[type+'Account'];
-  if(!name)return alert('Veuillez sélectionner un '+( type==='client'?'client':'fournisseur'));
+  if(!name)return '';
   const sum=accountSummary(type,name);
   const entity=(type==='client'?db.clients:db.suppliers).find(x=>x.name===name);
-
-  // â”€â”€ Options d'impression â”€â”€
   const fromVal=$(type+'-print-from')?.value||'';
   const toVal=$(type+'-print-to')?.value||'';
   const hidePm2=$(type+'-print-hide-pm2')?.checked||false;
-
-  // Filtrer les opérations par période
-  const filteredOps=sum.ops.filter(x=>{
-    if(!x.date)return true;
-    if(fromVal&&x.date<fromVal)return false;
-    if(toVal&&x.date>toVal)return false;
-    return true;
-  });
-  // Filtrer les paiements par période
-  const filteredPay=sum.payments.filter(p=>{
-    if(!p.date)return true;
-    if(fromVal&&p.date<fromVal)return false;
-    if(toVal&&p.date>toVal)return false;
-    return true;
-  });
-
+  const filteredOps=sum.ops.filter(x=>{if(!x.date)return true;if(fromVal&&x.date<fromVal)return false;if(toVal&&x.date>toVal)return false;return true});
+  const filteredPay=sum.payments.filter(p=>{if(!p.date)return true;if(fromVal&&p.date<fromVal)return false;if(toVal&&p.date>toVal)return false;return true});
   const totalOpsFiltered=filteredOps.reduce((s,x)=>s+num(x.total),0);
-  const totalFeesFiltered=type==='client'?filteredOps.filter(isFeeSale).reduce((s,x)=>s+num(x.total),0):0;
-  const totalPayFiltered=filteredPay.reduce((s,p)=>{
-    if(p.deductNow===false){return p.paidStatus==='paid'?s+num(p.amount):s;}
-    return s+num(p.amount);
-  },0);
-
-  // Label période
-  const periodLabel=fromVal||toVal
-    ?`${fromVal||'début'} -> ${toVal||'aujourd\'hui'}`
-    :'Toutes les dates';
-
-  // Construire les lignes opérations
-  const opsRows=filteredOps.map((x,i)=>{
-    const dimCell=`${x.length||0} x ${x.width||0} cm`;
-    const pm2Cell=hidePm2?'':`<td>${dh(x.pm2)}/m2</td>`;
-    return`<tr>
-      <td>${i+1}</td><td>${x.date}</td><td>${operationKind(x)}</td><td>${x.article}</td>
-      <td>${x.color||'-'}</td><td>${dimCell}</td>
-      <td>${siteName(x.site)}</td><td>${x.qty}</td>
-      <td>${sqm(surface(x.length,x.width,x.qty))}</td>
-      ${pm2Cell}
-      <td>${dh(x.total)}</td>
-    </tr>`;
-  }).join('')||`<tr><td colspan="${hidePm2?9:10}" style="text-align:center;color:#9ca3af;padding:12px">Aucune opération sur cette période</td></tr>`;
-
-  const payRows=filteredPay.map((p,i)=>`<tr>
-    <td>${i+1}</td><td>${p.date}</td><td>${dh(p.amount)}</td>
-    <td>${p.mode}</td><td>${p.due||'-'}</td>
-    <td>${paymentStatus(p)}</td><td>${p.note||'-'}</td>
-  </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:12px">Aucun paiement sur cette période</td></tr>';
-
-  // En-têtes opérations (avec ou sans prix m2)
-  const opsHead=hidePm2
-    ?'<th>#</th><th>Date</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Site</th><th>Qté</th><th>Surface</th><th>Total</th>'
-    :'<th>#</th><th>Date</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Site</th><th>Qté</th><th>Surface</th><th>Prix m2</th><th>Total</th>';
+  const totalPayFiltered=filteredPay.reduce((s,p)=>{if(p.deductNow===false)return p.paidStatus==='paid'?s+num(p.amount):s;return s+num(p.amount)},0);
+  const periodLabel=fromVal||toVal?`${fromVal||'début'} -> ${toVal||'aujourd\'hui'}`:'Toutes les dates';
+  const opsRows=filteredOps.map((x,i)=>{const dim=`${x.length||0} x ${x.width||0} cm`;const pm2=hidePm2?'':`<td>${dh(x.pm2)}/m2</td>`;return`<tr><td>${i+1}</td><td>${x.date}</td><td>${operationKind(x)}</td><td>${x.article}</td><td>${x.color||'-'}</td><td>${dim}</td><td>${siteName(x.site)}</td><td>${x.qty}</td><td>${sqm(surface(x.length,x.width,x.qty))}</td>${pm2}<td>${dh(x.total)}</td></tr>`}).join('')||`<tr><td colspan="${hidePm2?9:10}" style="text-align:center;color:#9ca3af;padding:12px">Aucune opération sur cette période</td></tr>`;
+  const payRows=filteredPay.map((p,i)=>`<tr><td>${i+1}</td><td>${p.date}</td><td>${dh(p.amount)}</td><td>${p.mode}</td><td>${p.due||'-'}</td><td>${paymentStatus(p)}</td><td>${p.note||'-'}</td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:12px">Aucun paiement sur cette période</td></tr>';
+  const opsHead=hidePm2?'<th>#</th><th>Date</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Site</th><th>Qté</th><th>Surface</th><th>Total</th>':'<th>#</th><th>Date</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Site</th><th>Qté</th><th>Surface</th><th>Prix m2</th><th>Total</th>';
   const opsTotalColspan=hidePm2?9:10;
-
-  const w=window.open('','_blank','width=1200,height=800');if(!w)return;
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${name} - ${periodLabel}</title>
+  const dateStr=new Date().toLocaleDateString('fr-MA',{day:'2-digit',month:'long',year:'numeric'});
+  const timeStr=new Date().toLocaleTimeString('fr-MA');
+  return {init:dh(sum.init),balance:dh(sum.balance),html:`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${name} - ${periodLabel}</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,sans-serif;padding:24px;color:#111;font-size:13px}
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;padding:24px;color:#111;font-size:13px}
 .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #1a56db}
-.header-left h1{font-size:20px;font-weight:700;color:#1a56db;margin-bottom:2px}
-.header-left p{font-size:12px;color:#6b7280}
+.header-left h1{font-size:20px;font-weight:700;color:#1a56db;margin-bottom:2px}.header-left p{font-size:12px;color:#6b7280}
 .header-right{text-align:right;font-size:11px;color:#6b7280;line-height:1.7}
 .period-badge{display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;margin-top:4px}
 .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
 .card{border:1px solid #e5e7eb;padding:12px;border-radius:10px;background:#f9fafb}
-.card.green{border-color:#6ee7b7;background:#ecfdf5}
-.card.red{border-color:#fca5a5;background:#fef2f2}
-.k{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;font-weight:600}
-.v{font-size:20px;font-weight:700;margin-top:5px}
+.card.green{border-color:#6ee7b7;background:#ecfdf5}.card.red{border-color:#fca5a5;background:#fef2f2}
+.k{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;font-weight:600}.v{font-size:20px;font-weight:700;margin-top:5px}
 h2{font-size:14px;font-weight:700;margin:20px 0 8px;display:flex;align-items:center;gap:8px}
 h2 span{font-size:11px;font-weight:400;color:#6b7280}
 table{width:100%;border-collapse:collapse;margin-top:6px}
 th{background:#f8fafc;padding:8px 10px;text-align:left;border:1px solid #e5e7eb;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280}
 td{border:1px solid #e5e7eb;padding:7px 10px;font-size:12px;vertical-align:middle}
-tfoot td{background:#f0fdf4;font-weight:700}
-tr:nth-child(even) td{background:#fafafa}
+tfoot td{background:#f0fdf4;font-weight:700}tr:nth-child(even) td{background:#fafafa}
 .footer{margin-top:24px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af;text-align:center}
-@media print{
-  body{padding:12px}
-  .cards{grid-template-columns:repeat(4,1fr)}
-  th{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .card{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-}
+@media print{body{padding:12px}.cards{grid-template-columns:repeat(4,1fr)}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}.card{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head><body>
-<div class="header">
-  <div class="header-left">
-    <h1>${type==='client'?'Compte client':'Compte fournisseur'} - ${name}</h1>
-    <p>Ville : ${entity?.city||'-'}</p>
-    <div class="period-badge">Periode : ${periodLabel}</div>
-  </div>
-  <div class="header-right">
-    Imprime le ${new Date().toLocaleDateString('fr-MA',{day:'2-digit',month:'long',year:'numeric'})}<br>
-    a ${new Date().toLocaleTimeString('fr-MA')}<br>
-    ${hidePm2?'<span style="color:#d97706;font-weight:600">Prix m2 masque</span>':''}
-  </div>
-</div>
-
-<div class="cards">
-  <div class="card"><div class="k">Solde initial</div><div class="v">${dh(sum.init)}</div></div>
-  <div class="card"><div class="k">Operations (periode)</div><div class="v">${dh(totalOpsFiltered)}</div></div>
-  <div class="card"><div class="k">Paiements (periode)</div><div class="v">${dh(totalPayFiltered)}</div></div>
-  <div class="card ${sum.balance>0?'green':'red'}">
-    <div class="k">Solde global restant</div>
-    <div class="v" style="color:${sum.balance>0?'#059669':'#dc2626'}">${dh(sum.balance)}</div>
-  </div>
-</div>
-
+<div class="header"><div class="header-left"><h1>${type==='client'?'Compte client':'Compte fournisseur'} - ${name}</h1><p>Ville : ${entity?.city||'-'}</p><div class="period-badge">Periode : ${periodLabel}</div></div><div class="header-right">Imprime le ${dateStr}<br>a ${timeStr}<br>${hidePm2?'<span style="color:#d97706;font-weight:600">Prix m2 masque</span>':''}</div></div>
+<div class="cards"><div class="card"><div class="k">Solde initial</div><div class="v">${dh(sum.init)}</div></div><div class="card"><div class="k">Operations (periode)</div><div class="v">${dh(totalOpsFiltered)}</div></div><div class="card"><div class="k">Paiements (periode)</div><div class="v">${dh(totalPayFiltered)}</div></div><div class="card ${sum.balance>0?'green':'red'}"><div class="k">Solde global restant</div><div class="v" style="color:${sum.balance>0?'#059669':'#dc2626'}">${dh(sum.balance)}</div></div></div>
 <h2>Operations <span>(${filteredOps.length} ligne(s)${fromVal||toVal?' - periode filtree':''})</span></h2>
-<table>
-  <thead><tr>${opsHead.replace('<th>Article</th>','<th>Type</th><th>Article/Frais</th>')}</tr></thead>
-  <tbody>${opsRows}</tbody>
-  <tfoot>
-    <tr>
-      <td colspan="${opsTotalColspan}"><strong>TOTAL OPERATIONS</strong></td>
-      <td><strong>${dh(totalOpsFiltered)}</strong></td>
-    </tr>
-  </tfoot>
-</table>
-
+<table><thead><tr>${opsHead.replace('<th>Article</th>','<th>Type</th><th>Article/Frais</th>')}</tr></thead><tbody>${opsRows}</tbody><tfoot><tr><td colspan="${opsTotalColspan}"><strong>TOTAL OPERATIONS</strong></td><td><strong>${dh(totalOpsFiltered)}</strong></td></tr></tfoot></table>
 <h2>Paiements <span>(${filteredPay.length} ligne(s)${fromVal||toVal?' - periode filtree':''})</span></h2>
-<table>
-  <thead><tr><th>#</th><th>Date</th><th>Montant</th><th>Mode</th><th>Echeance</th><th>Statut</th><th>Remarque</th></tr></thead>
-  <tbody>${payRows}</tbody>
-  <tfoot>
-    <tr>
-      <td colspan="2"><strong>TOTAL PAIEMENTS</strong></td>
-      <td><strong>${dh(totalPayFiltered)}</strong></td>
-      <td colspan="4"></td>
-    </tr>
-  </tfoot>
-</table>
-
-<div class="footer">GestStock ERP - Document genere le ${new Date().toLocaleDateString('fr-MA')} a ${new Date().toLocaleTimeString('fr-MA')} | Periode : ${periodLabel}</div>
-<script>window.onload=function(){window.print();}<\/script>
-</body></html>`);
+<table><thead><tr><th>#</th><th>Date</th><th>Montant</th><th>Mode</th><th>Echeance</th><th>Statut</th><th>Remarque</th></tr></thead><tbody>${payRows}</tbody><tfoot><tr><td colspan="2"><strong>TOTAL PAIEMENTS</strong></td><td><strong>${dh(totalPayFiltered)}</strong></td><td colspan="4"></td></tr></tfoot></table>
+<div class="footer">GestStock ERP - Document genere le ${dateStr} a ${timeStr} | Periode : ${periodLabel}</div>
+</body></html>`,name,filteredOps,filteredPay,totalOpsFiltered,totalPayFiltered};
+}
+function printAccount(type){
+  const r=buildAccountReportHTML(type);if(!r.name)return alert('Veuillez sÃ©lectionner un '+(type==='client'?'client':'fournisseur'));
+  const w=window.open('','_blank','width=1200,height=800');if(!w)return;
+  w.document.write(r.html.replace('<\/script>','').replace('</body>','<script>window.onload=function(){window.print()}<\/script></body>'));
   w.document.close();
-  // Fermer le panel après impression
   document.getElementById(type+'-print-options').style.display='none';
 }
-
 async function shareAccountPDF(type){
-  const name=view[type+'Account'];
-  if(!name)return alert('Veuillez sÃ©lectionner un '+(type==='client'?'client':'fournisseur'));
   if(typeof html2pdf==='undefined')return alert('BibliothÃ¨que PDF non chargÃ©e. RÃ©essayez dans quelques secondes.');
-  const sum=accountSummary(type,name);
-  const entity=(type==='client'?db.clients:db.suppliers).find(x=>x.name===name);
-  const fromVal=$(type+'-print-from')?.value||'',toVal=$(type+'-print-to')?.value||'',hidePm2=$(type+'-print-hide-pm2')?.checked||false;
-  const filteredOps=sum.ops.filter(x=>{if(!x.date)return true;if(fromVal&&x.date<fromVal)return false;if(toVal&&x.date>toVal)return false;return true});
-  const filteredPay=sum.payments.filter(p=>{if(!p.date)return true;if(fromVal&&p.date<fromVal)return false;if(toVal&&p.date>toVal)return false;return true});
-  const totalOpsFiltered=filteredOps.reduce((s,x)=>s+num(x.total),0);
-  const totalPayFiltered=filteredPay.reduce((s,p)=>{if(p.deductNow===false)return p.paidStatus==='paid'?s+num(p.amount):s;return s+num(p.amount)},0);
-  const periodLabel=fromVal||toVal?`${fromVal||'dÃ©but'} -> ${toVal||'aujourd\'hui'}`:'Toutes les dates';
-  const opsRows=filteredOps.map((x,i)=>{const dim=`${x.length||0} x ${x.width||0} cm`;const pm2=hidePm2?'':`<td>${dh(x.pm2)}/m2</td>`;return`<tr><td>${i+1}</td><td>${x.date}</td><td>${operationKind(x)}</td><td>${x.article}</td><td>${x.color||'-'}</td><td>${dim}</td><td>${siteName(x.site)}</td><td>${x.qty}</td><td>${sqm(surface(x.length,x.width,x.qty))}</td>${pm2}<td>${dh(x.total)}</td></tr>`}).join('')||`<tr><td colspan="${hidePm2?9:10}" style="text-align:center;color:#9ca3af;padding:12px">Aucune opÃ©ration</td></tr>`;
-  const payRows=filteredPay.map((p,i)=>{const st=paymentStatus(p);const bc=p.paidStatus==='paid'?'badge-ok':p.paidStatus==='unpaid'?'badge-bad':'badge-warn';return`<tr><td>${i+1}</td><td>${p.date}</td><td>${dh(p.amount)}</td><td>${p.mode}</td><td>${p.due||'-'}</td><td><span class="badge ${bc}">${st}</span></td><td>${p.note||'-'}</td></tr>`}).join('')||'<tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:12px">Aucun paiement</td></tr>';
-  const opsHead=hidePm2?'<th>#</th><th>Date</th><th>Type</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Site</th><th>QtÃ©</th><th>Surface</th><th>Total</th>':'<th>#</th><th>Date</th><th>Type</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Site</th><th>QtÃ©</th><th>Surface</th><th>Prix m2</th><th>Total</th>';
-  const opsTotalColspan=hidePm2?9:10;
-  const dateStr=new Date().toLocaleDateString('fr-MA',{day:'2-digit',month:'long',year:'numeric'});
-  const timeStr=new Date().toLocaleTimeString('fr-MA');
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${name} - ${periodLabel}</title>
-<style>
-@page{margin:0}*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',system-ui,sans-serif;padding:0;color:#1e293b;font-size:12px;background:#f1f5f9}
-.pdoc{max-width:210mm;margin:0 auto;background:#fff;min-height:297mm;box-shadow:0 1px 3px rgba(0,0,0,.08);position:relative}
-.phd{background:linear-gradient(135deg,#1e3a5f,#2563eb);padding:28px 32px 22px;color:#fff;display:flex;justify-content:space-between;align-items:flex-start}
-.phd-l h1{font-size:22px;font-weight:800;letter-spacing:-.3px;margin-bottom:2px}
-.phd-l p{font-size:11px;opacity:.8;margin-top:3px}
-.phd-r{text-align:right;font-size:11px;opacity:.9;line-height:1.6}
-.phd-r .dtype{display:inline-block;background:rgba(255,255,255,.18);padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:.3px;margin-bottom:6px}
-.pinfo{display:flex;justify-content:space-between;align-items:center;padding:14px 32px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
-.pinfo-l{font-size:12px;color:#475569}.pinfo-l strong{color:#1e293b}
-.pinfo-r{display:flex;gap:16px;font-size:11px;color:#64748b}
-.pinfo-r span{display:inline-flex;align-items:center;gap:4px}
-.pcards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:22px 32px}
-.pc{border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-.pc .pk{font-size:9px;text-transform:uppercase;letter-spacing:.1em;opacity:.7;font-weight:700;display:flex;align-items:center;gap:5px}
-.pc .pv{font-size:24px;font-weight:800;margin-top:6px;position:relative;z-index:1}
-.pc-blue{background:linear-gradient(135deg,#eff6ff,#dbeafe)}.pc-blue .pv{color:#1d4ed8}
-.pc-purple{background:linear-gradient(135deg,#f5f3ff,#ede9fe)}.pc-purple .pv{color:#7c3aed}
-.pc-orange{background:linear-gradient(135deg,#fff7ed,#ffedd5)}.pc-orange .pv{color:#ea580c}
-.pc-green{background:linear-gradient(135deg,#f0fdf4,#dcfce7)}.pc-green .pv{color:#16a34a}
-.pc-red{background:linear-gradient(135deg,#fef2f2,#fee2e2)}.pc-red .pv{color:#dc2626}
-.psc{padding:8px 32px 20px}
-h2{font-size:14px;font-weight:700;margin:18px 0 8px;display:flex;align-items:center;gap:7px;color:#1e293b;border-bottom:2px solid #e2e8f0;padding-bottom:8px}
-table{width:100%;border-collapse:separate;border-spacing:0;border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04);margin-top:4px}
-th{background:#1e293b;color:#fff;padding:10px 12px;text-align:left;font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
-th:first-child{border-radius:0}td{padding:8px 12px;font-size:11px;vertical-align:middle;border-bottom:1px solid #f1f5f9}
-tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:#f8fafc}
-tfoot td{background:#f1f5f9;font-weight:700;font-size:11px;padding:10px 12px;border-top:2px solid #e2e8f0}
-.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
-.badge-ok{background:#dcfce7;color:#16a34a}.badge-warn{background:#fef9c3;color:#a16207}.badge-bad{background:#fee2e2;color:#dc2626}
-.pft{padding:16px 32px 24px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#94a3b8}
-@media print{body{background:#fff}.pdoc{box-shadow:none}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}.pc{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-</style></head><body>
-<div class="pdoc">
-<div class="phd"><div class="phd-l"><h1>GestStock ERP</h1><p>Application de gestion de stock professionnelle</p></div><div class="phd-r"><div class="dtype">RELEVÉ DE COMPTE</div><br>Généré le ${dateStr} à ${timeStr}</div></div>
-<div class="pinfo"><div class="pinfo-l"><strong>${type==='client'?'Client' : 'Fournisseur'} :</strong> ${name} ${entity?.city ? '| '+entity?.city : ''}</div><div class="pinfo-r"><span>📅 ${periodLabel}</span>${hidePm2?'<span style="color:#d97706">🔒 Prix m2 masqué</span>':''}</div></div>
-<div class="pcards">
-<div class="pc pc-blue"><div class="pk">💰 Solde initial</div><div class="pv">${dh(sum.init)}</div></div>
-<div class="pc pc-purple"><div class="pk">📊 Opérations (période)</div><div class="pv">${dh(totalOpsFiltered)}</div></div>
-<div class="pc pc-orange"><div class="pk">💳 Paiements (période)</div><div class="pv">${dh(totalPayFiltered)}</div></div>
-<div class="pc ${sum.balance>0?'pc-green':'pc-red'}"><div class="pk">⚖️ Solde restant</div><div class="pv">${dh(sum.balance)}</div></div>
-</div>
-<div class="psc">
-<h2>📋 Opérations (${filteredOps.length})</h2>
-<table><thead><tr>${opsHead}</tr></thead><tbody>${opsRows}</tbody><tfoot><tr><td colspan="${opsTotalColspan}">TOTAL OPÉRATIONS</td><td>${dh(totalOpsFiltered)}</td></tr></tfoot></table>
-<h2>💳 Paiements (${filteredPay.length})</h2>
-<table><thead><tr><th>#</th><th>Date</th><th>Montant</th><th>Mode</th><th>Échéance</th><th>Statut</th><th>Remarque</th></tr></thead><tbody>${payRows}</tbody><tfoot><tr><td colspan="2">TOTAL PAIEMENTS</td><td>${dh(totalPayFiltered)}</td><td colspan="4"></td></tr></tfoot></table>
-</div>
-<div class="pft"><span>GestStock ERP — Document professionnel</span><span>Généré le ${dateStr}</span></div>
-</div></body></html>`;
+  const r=buildAccountReportHTML(type);if(!r.name)return alert('Veuillez sÃ©lectionner un '+(type==='client'?'client':'fournisseur'));
   try{
     const iframe=document.createElement('iframe');
     iframe.style.position='fixed';iframe.style.left='-9999px';iframe.style.top='0';iframe.style.width='800px';iframe.style.height='1200px';
     document.body.appendChild(iframe);
     const doc=iframe.contentDocument||iframe.contentWindow.document;
-    doc.open();doc.write(html);doc.close();
-    await new Promise(r=>setTimeout(r,1200));
-    const pdfBlob=await html2pdf().set({margin:[8,8,8,8],filename:`Compte-${name}.pdf`,pagebreak:{mode:['avoid-all','css','legacy']},html2canvas:{scale:2,useCORS:true,logging:false,width:800},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(iframe.contentDocument.body).outputPdf('blob');
+    doc.open();doc.write(r.html);doc.close();
+    await new Promise(x=>setTimeout(x,1200));
+    const pdfBlob=await html2pdf().set({margin:[5,5,5,5],filename:`Compte-${r.name}.pdf`,html2canvas:{scale:2,useCORS:true,logging:false,width:800},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(iframe.contentDocument.body).outputPdf('blob');
     document.body.removeChild(iframe);
-    const file=new File([pdfBlob],`Compte-${name}.pdf`,{type:'application/pdf'});
+    const file=new File([pdfBlob],`Compte-${r.name}.pdf`,{type:'application/pdf'});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
-      await navigator.share({files:[file],title:`Compte ${name}`});
+      await navigator.share({files:[file],title:`Compte ${r.name}`});
     }else{
       const url=URL.createObjectURL(pdfBlob);
-      const a=document.createElement('a');a.href=url;a.download=`Compte-${name}.pdf`;a.click();
+      const a=document.createElement('a');a.href=url;a.download=`Compte-${r.name}.pdf`;a.click();
       URL.revokeObjectURL(url);
       notify('PDF tÃ©lÃ©chargÃ©. Ouvrez WhatsApp pour le partager.');
     }
   }catch(e){
     notify('Erreur gÃ©nÃ©ration PDF: '+e.message,true);
-    const text=`*Compte ${type==='client'?'Client':'Fournisseur'}* : ${name}\n\n*Solde initial* : ${dh(sum.init)}\n*Total opÃ©rations* : ${dh(sum.totalOps)}\n*Total paiements* : ${dh(sum.totalPay)}\n*Solde restant* : ${dh(sum.balance)}\n\n_EnvoyÃ© depuis GestStock ERP_`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank');
+    const txt='*Compte '+(type==='client'?'Client':'Fournisseur')+'* : '+r.name+'\n\n*Solde initial* : '+r.init+'\n*Total opÃ©rations* : '+dh(r.totalOpsFiltered)+'\n*Total paiements* : '+dh(r.totalPayFiltered)+'\n*Solde restant* : '+r.balance+'\n\n_EnvoyÃ© depuis GestStock ERP_';
+    window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,'_blank');
   }
   document.getElementById(type+'-print-options').style.display='none';
 }
