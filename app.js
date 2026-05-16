@@ -2233,59 +2233,12 @@ function printAccount(type){
   document.getElementById(type+'-print-options').style.display='none';
 }
 async function shareAccountPDF(type){
-  if(typeof pdfMake==='undefined')return alert('BibliothÃ¨que PDF non chargÃ©e. RÃ©essayez dans quelques secondes.');
   const r=buildAccountReportHTML(type);if(!r.name)return alert('Veuillez sÃ©lectionner un '+(type==='client'?'client':'fournisseur'));
+  if(typeof jspdf?.jsPDF==='undefined')return alert('BibliothÃ¨que PDF non chargÃ©e. RafraÃ®chissez la page et rÃ©essayez.');
   const name=r.name,sum=accountSummary(type,name),entity=(type==='client'?db.clients:db.suppliers).find(x=>x.name===name);
-  const dd={pageSize:'A4',pageMargins:[20,20,20,20],defaultStyle:{fontSize:9,font:'Roboto'},info:{title:'Compte '+name,author:'GestStock ERP'},content:[
-    {columns:[{width:'*',stack:[{text:'GestStock ERP',style:'hdrTitle'},{text:'Application de gestion de stock',style:'hdrSub'}]},{width:'auto',stack:[{text:'RELEVÉ DE COMPTE',style:'hdrBadge'},{text:new Date().toLocaleDateString('fr-MA')+' à '+new Date().toLocaleTimeString('fr-MA'),style:'hdrDate'}]}],style:'hdrWrap'},
-    {columns:[{width:'*',text:(type==='client'?'Client':'Fournisseur')+' : '+name+(entity?.city?' | '+entity.city:'')},{width:'auto',text:r.filteredOps.length+' opérations, '+r.filteredPay.length+' paiements'}],margin:[0,6,0,12]},
-    {columns:[
-      {width:'*',stack:[{text:'💰 Solde initial',style:'cl'},{text:r.init,style:'cv'}],style:'c c1'},
-      {width:'*',stack:[{text:'📊 Opérations (période)',style:'cl'},{text:dh(r.totalOpsFiltered),style:'cv'}],style:'c c2'},
-      {width:'*',stack:[{text:'💳 Paiements (période)',style:'cl'},{text:dh(r.totalPayFiltered),style:'cv'}],style:'c c3'},
-      {width:'*',stack:[{text:'⚖️ Solde restant',style:'cl'},{text:dh(sum.balance),style:'cv'}],style:'c '+(sum.balance>0?'c4':'c5')}
-    ],columnGap:8,margin:[0,0,0,12]},
-    {text:'Opérations ('+r.filteredOps.length+')',style:'secTitle'},
-    {table:{headerRows:1,widths:['auto','auto','auto','auto','auto','auto','auto','auto','auto','auto','auto'],body:[
-      [{text:'#',style:'th'},{text:'Date',style:'th'},{text:'Type',style:'th'},{text:'Article',style:'th'},{text:'Couleur',style:'th'},{text:'Dimensions',style:'th'},{text:'Site',style:'th'},{text:'Qté',style:'th'},{text:'Surface',style:'th'},{text:'Prix m2',style:'th'},{text:'Total',style:'th'}],
-      ...r.filteredOps.map((x,i)=>[
-        {text:String(i+1),style:'td'},{text:x.date||'',style:'td'},{text:operationKind(x),style:'td'},{text:x.article||'',style:'td'},{text:x.color||'-',style:'td'},
-        {text:(x.length||0)+' x '+(x.width||0),style:'td'},{text:siteName(x.site),style:'td'},{text:String(x.qty||0),style:'td'},{text:sqm(surface(x.length,x.width,x.qty)),style:'td'},
-        {text:dh(x.pm2),style:'td'},{text:dh(x.total),style:'td'}
-      ]),
-      [{text:'TOTAL OPÉRATIONS',colSpan:10,style:'tf'},{},{},{},{},{},{},{},{},{},{text:dh(r.totalOpsFiltered),style:'tf'}]
-    ]},layout:{hLineWidth:0,vLineWidth:0,defaultBorder:false,fillColor:function(i){return i===0?'#1e293b':i%2===0?'#f8fafc':null}}},
-    {text:'Paiements ('+r.filteredPay.length+')',style:'secTitle',margin:[0,12,0,0]},
-    {table:{headerRows:1,widths:['auto','auto','auto','auto','auto','auto','auto'],body:[
-      [{text:'#',style:'th'},{text:'Date',style:'th'},{text:'Montant',style:'th'},{text:'Mode',style:'th'},{text:'Échéance',style:'th'},{text:'Statut',style:'th'},{text:'Remarque',style:'th'}],
-      ...r.filteredPay.map((p,i)=>[
-        {text:String(i+1),style:'td'},{text:p.date||'',style:'td'},{text:dh(p.amount),style:'td'},{text:p.mode||'',style:'td'},{text:p.due||'-',style:'td'},
-        {text:paymentStatus(p),style:'td'},{text:p.note||'-',style:'td'}
-      ]),
-      [{text:'TOTAL PAIEMENTS',colSpan:2,style:'tf'},{},{text:dh(r.totalPayFiltered),style:'tf'},{},{},{},{}]
-    ]},layout:{hLineWidth:0,vLineWidth:0,defaultBorder:false,fillColor:function(i){return i===0?'#1e293b':i%2===0?'#f8fafc':null}}},
-    {text:'GestStock ERP - Document généré le '+new Date().toLocaleDateString('fr-MA'),style:'ft',margin:[0,20,0,0]}
-  ],styles:{
-    hdrWrap:{margin:[0,0,0,12],padding:[0,0,0,10],border:[false,false,false,true],lineHeight:1.4},
-    hdrTitle:{fontSize:16,bold:true,color:'#1e3a5f',margin:[0,0,0,2]},
-    hdrSub:{fontSize:8,color:'#6b7280'},
-    hdrBadge:{fontSize:8,bold:true,color:'#1e40af',background:'#eff6ff',alignment:'right',margin:[10,0,0,4]},
-    hdrDate:{fontSize:7,color:'#6b7280',alignment:'right'},
-    cl:{fontSize:7,bold:true,color:'#475569',margin:[0,0,0,2]},
-    cv:{fontSize:16,bold:true,color:'#111'},
-    c:{margin:[0,4],padding:[8,10]},
-    c1:{background:'#eff6ff'},c2:{background:'#f5f3ff'},c3:{background:'#fff7ed'},c4:{background:'#f0fdf4'},c5:{background:'#fef2f2'},
-    secTitle:{fontSize:11,bold:true,color:'#1e293b',margin:[0,0,0,4]},
-    th:{fontSize:7,bold:true,color:'#fff',fillColor:'#1e293b',padding:[4,6],margin:[0,0,0,0]},
-    td:{fontSize:8,color:'#334155',padding:[4,6]},
-    tf:{fontSize:8,bold:true,fillColor:'#f1f5f9',padding:[4,6]},
-    ft:{fontSize:7,color:'#94a3b8',alignment:'center'}
-  }};
   try{
-    const pdfBlob=await new Promise((res,rej)=>{
-      pdfMake.createPdf(dd).getBlob(b=>{res(b)},rej);
-      setTimeout(()=>rej(new Error('Timeout')),15000);
-    });
+    const{doc,mm}=await buildJsPDF(type,name,entity,sum,r);
+    const pdfBlob=doc.output('blob');
     const file=new File([pdfBlob],`Compte-${name}.pdf`,{type:'application/pdf'});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
       await navigator.share({files:[file],title:`Compte ${name}`});
@@ -2301,6 +2254,53 @@ async function shareAccountPDF(type){
     window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,'_blank');
   }
   document.getElementById(type+'-print-options').style.display='none';
+}
+async function buildJsPDF(type,name,entity,sum,r){
+  const {jsPDF}=jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const ml=20,mt=20,w=170;
+  const L=(str,x,y,opt)=>{doc.text(str,x,y,opt||{})};
+  const LS=(sz,flt)=>{doc.setFontSize(sz);if(flt)doc.setFont('helvetica',flt);else doc.setFont('helvetica','normal')};
+  const LC=(r,g,b)=>{doc.setTextColor(r,g,b)};
+  const dateStr=new Date().toLocaleDateString('fr-MA',{day:'2-digit',month:'long',year:'numeric'});
+  const timeStr=new Date().toLocaleTimeString('fr-MA');
+  let y=mt;
+  doc.setFillColor(30,58,95);doc.rect(0,0,210,30,'F');
+  LS(18,'bold');LC(255,255,255);L('GestStock ERP',ml,20);
+  LS(8,'normal');LC(200,215,240);L('Application de gestion de stock',ml,27);
+  doc.setFillColor(59,130,246);doc.roundedRect(155,8,38,7,2,2,'F');
+  LS(7,'bold');LC(255,255,255);L('RELEVÉ DE COMPTE',165,13.5,{align:'center'});
+  LS(7,'normal');LC(200,215,240);L(dateStr+' à '+timeStr,190,13.5,{align:'right'});
+  y=38;
+  LS(10,'bold');LC(30,41,59);L((type==='client'?'Client':'Fournisseur')+' : '+name+(entity?.city?' | '+entity.city:''),ml,y);
+  LS(8,'normal');LC(100,116,139);L(r.filteredOps.length+' opérations, '+r.filteredPay.length+' paiements',190,y,{align:'right'});
+  y+=8;
+  const cards=[
+    {bg:[239,246,255],cl:'#475569',lb:'Solde initial',val:r.init,vc:[29,78,216]},
+    {bg:[245,243,255],cl:'#475569',lb:'Opérations (période)',val:dh(r.totalOpsFiltered),vc:[124,58,237]},
+    {bg:[255,247,237],cl:'#475569',lb:'Paiements (période)',val:dh(r.totalPayFiltered),vc:[234,88,12]},
+    {bg:sum.balance>0?[240,253,244]:[254,242,242],cl:'#475569',lb:'Solde restant',val:dh(sum.balance),vc:sum.balance>0?[22,163,74]:[220,38,38]}
+  ];
+  const cw=(w-12)/4;
+  cards.forEach((c,i)=>{
+    const cx=ml+i*(cw+4)+1;
+    doc.setFillColor(c.bg[0],c.bg[1],c.bg[2]);doc.roundedRect(cx,y,cw,18,2,2,'F');
+    LS(6,'bold');LC(71,85,105);L(c.lb,cx+3,y+3.5);
+    LS(12,'bold');LC(c.vc[0],c.vc[1],c.vc[2]);L(c.val,cx+3,y+13);
+  });
+  y+=24;
+  const opsHead=[{text:'#',colW:8},{text:'Date',colW:15},{text:'Type',colW:14},{text:'Article',colW:24},{text:'Couleur',colW:14},{text:'Dim.',colW:16},{text:'Site',colW:16},{text:'Qté',colW:10},{text:'Surface',colW:14},{text:'Prix m2',colW:14},{text:'Total',colW:17}];
+  const opsBody=r.filteredOps.map(x=>[String(r.filteredOps.indexOf(x)+1),x.date||'',operationKind(x),x.article||'',x.color||'-',(x.length||0)+'x'+(x.width||0),siteName(x.site),String(x.qty||0),sqm(surface(x.length,x.width,x.qty)),dh(x.pm2),dh(x.total)]);
+  opsBody.push([{content:'TOTAL OPÉRATIONS',colSpan:10,styles:{halign:'left',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}},'','','','','','','','','',{content:dh(r.totalOpsFiltered),styles:{halign:'right',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}}]);
+  doc.autoTable({startY:y,head:[opsHead.map(h=>({content:h.text,styles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7,fontStyle:'bold',halign:'center',cellPadding:1.5}}))],body:opsBody,theme:'plain',margin:{left:ml,right:ml},tableWidth:w,columnStyles:opsHead.reduce((a,h)=>(a[h.text]={cellWidth:h.colW,halign:'center'},a),{}),headStyles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7},bodyStyles:{fontSize:7,cellPadding:1.5},alternateRowStyles:{fillColor:[248,250,252]},didDrawPage:function(d){y=d.cursor.y}});
+  y+=10;
+  const payHead=[{text:'#',colW:8},{text:'Date',colW:18},{text:'Montant',colW:22},{text:'Mode',colW:18},{text:'Échéance',colW:20},{text:'Statut',colW:18},{text:'Remarque',colW:w-8-18-22-18-20-18}];
+  const payBody=r.filteredPay.map(p=>[String(r.filteredPay.indexOf(p)+1),p.date||'',dh(p.amount),p.mode||'',p.due||'-',paymentStatus(p),p.note||'-']);
+  payBody.push([{content:'TOTAL PAIEMENTS',colSpan:2,styles:{halign:'left',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}},'',{content:dh(r.totalPayFiltered),styles:{halign:'right',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}},'','','','']);
+  doc.autoTable({startY:y,head:[payHead.map(h=>({content:h.text,styles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7,fontStyle:'bold',halign:'center',cellPadding:1.5}}))],body:payBody,theme:'plain',margin:{left:ml,right:ml},tableWidth:w,columnStyles:payHead.reduce((a,h)=>(a[h.text]={cellWidth:h.colW,halign:'center'},a),{}),headStyles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7},bodyStyles:{fontSize:7,cellPadding:1.5},alternateRowStyles:{fillColor:[248,250,252]},didDrawPage:function(d){y=d.cursor.y}});
+  LS(6,'normal');LC(148,163,184);
+  L('GestStock ERP — Document généré le '+dateStr,105,y+10,{align:'center'});
+  return{doc,mm:doc.internal.pageSize};
 }
 
 // â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬ REFRESH â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬
