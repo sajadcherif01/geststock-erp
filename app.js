@@ -2278,15 +2278,16 @@ async function buildJsPDF(type,name,entity,sum,r){
   }catch(e){/* Cambria non disponible */}
   let y=mt;
   doc.setFillColor(30,58,95);doc.rect(0,0,210,34,'F');
-  if(cambriaOk)doc.setFont('Cambria','bold');else doc.setFont('helvetica','bold');
-  LS(20,'bold');LC(255,255,255);L('SayfoFlex',ml,20);
-  doc.setFont('helvetica','normal');LS(7,'normal');LC(200,215,240);L('Application de gestion de l\u2019entreprise professionnel d\u00e9velopp\u00e9 par Sayfo Flex',ml,28);
+  doc.setFont('helvetica','bold');LS(20,'bold');LC(255,255,255);L(name,ml,20);
+  doc.setFont('helvetica','normal');LS(7,'normal');LC(200,215,240);L(entity?.city||'',ml,28);
   doc.setFillColor(59,130,246);doc.roundedRect(150,8,44,7,2,2,'F');
   doc.setFont('helvetica','bold');LS(7,'bold');LC(255,255,255);L('Relev\u00e9e de compte',163,13.5,{align:'center'});
   doc.setFont('helvetica','normal');LS(7,'normal');LC(200,215,240);L(rangeStr,190,22,{align:'right'});
-  y=42;
-  LS(10,'bold');LC(30,41,59);L((type==='client'?'Client':'Fournisseur')+' : '+name+(entity?.city?' | '+entity.city:''),ml,y);
+  y=40;
+  LS(16,'bold');LC(30,41,59);if(cambriaOk)doc.setFont('Cambria','bold');else doc.setFont('times','bold');doc.text('SayfoFlex ERP',ml,y);
   LS(8,'normal');LC(100,116,139);L(r.filteredOps.length+' op\u00e9rations, '+r.filteredPay.length+' paiements',190,y,{align:'right'});
+  y+=7;
+  doc.setFont('helvetica','normal');LS(7,'normal');LC(100,116,139);L('Application de gestion de l\u2019entreprise professionnel d\u00e9velopp\u00e9 par Sayfo Flex',ml,y);
   y+=8;
   const cards=[
     {bg:[239,246,255],lb:'Solde initial',val:r.init,vc:[29,78,216]},
