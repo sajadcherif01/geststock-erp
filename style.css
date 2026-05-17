@@ -120,10 +120,14 @@ html{scroll-behavior:smooth}
 }
 .sub-btn:hover{background:var(--surface2);color:var(--ink);border-left-color:var(--line2);transform:translateY(-1px)}
 .sub-btn.active{background:rgba(232,185,106,.08);color:var(--gold);font-weight:600;border-left-color:var(--gold)}
-.sub-btn .ico{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--surface2);color:var(--mut);font-size:9px;font-weight:700;font-family:'Syne',sans-serif;margin-right:8px;flex-shrink:0;transition:.12s;border:1px solid var(--line)}
+.sub-btn .ico{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--surface2);color:var(--mut);margin-right:8px;flex-shrink:0;transition:.12s;border:1px solid var(--line)}
+.sub-btn .ico svg{width:13px;height:13px;display:block}
 .sub-btn:hover .ico{background:var(--surface);border-color:var(--line2);color:var(--ink)}
 .sub-btn.active .ico{background:rgba(232,185,106,.12);border-color:rgba(232,185,106,.2);color:var(--gold)}
-.tab-btn .ico{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:8px;font-weight:800;font-family:'Syne',sans-serif;margin-right:4px;flex-shrink:0}
+.tab-btn .ico{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-right:5px;flex-shrink:0;color:var(--mut)}
+.tab-btn .ico svg{width:14px;height:14px;display:block}
+.tab-btn:hover .ico{color:var(--ink)}
+.tab-btn.active .ico{color:var(--gold)}
 .sub-btn .badge-count{margin-left:auto;background:var(--gold);color:#0b0e14;border-radius:999px;font-size:10px;font-weight:700;padding:1px 6px;min-width:18px;text-align:center}
 
 /* PANEL */
