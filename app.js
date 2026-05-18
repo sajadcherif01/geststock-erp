@@ -626,7 +626,7 @@ function normalizePayments(){
 function isPaymentDeductible(p){return normalizedPaymentStatus(p)==='paid'}
 // ===== CLIENT FEES + AUDIT =====
 function isFeeSale(x){return x?.isFee||x?.horsStock&&['Transport','Frais transport','Frais couture','Surgi moquette','Couture','Surgi'].includes(x.article)}
-function operationKind(x){return isFeeSale(x)?(x.feeType||x.article||'Frais'):'Marchandise'}
+function operationKind(x){return x.isBuyback?'Rachat':isFeeSale(x)?(x.feeType||x.article||'Frais'):'Marchandise'}
 function saveAuditLog(){
   try{localStorage.setItem('gs3_operation_audit',JSON.stringify(operationAuditLog.slice(-80)))}catch(e){}
 }
@@ -684,7 +684,7 @@ function enhanceFeeAndAuditUI(){
       opTable.querySelectorAll('tbody tr').forEach((tr,i)=>{
         if(tr.querySelector('.empty')){tr.querySelector('.empty').colSpan=(parseInt(tr.querySelector('.empty').colSpan)||10)+1;return;}
         const row=sum.ops[i];
-        tr.children[1]?.insertAdjacentHTML('afterend',`<td><span class="badge ${isFeeSale(row)?'b-warn':'b-ok'}">${operationKind(row)}</span></td>`);
+        tr.children[1]?.insertAdjacentHTML('afterend',`<td><span class="badge ${row.isBuyback?'b-bad':isFeeSale(row)?'b-warn':'b-ok'}">${operationKind(row)}</span></td>`);
       });
     }
     const auditRows=operationAuditLog.filter(x=>!view.clientAccount||x.entity===view.clientAccount).slice(-12).reverse().map((x,i)=>`<tr><td>${i+1}</td><td>${x.date.slice(0,16).replace('T',' ')}</td><td>${x.user}</td><td>${x.action}</td><td>${x.type}</td></tr>`).join('');
@@ -1207,7 +1207,7 @@ function renderAccountPanel(type,title){
   view[type+'Account']=selected;
   const sum=accountSummary(type,selected);
   const payRows=sum.payments.map((p,i)=>{const due=dueState(p.due);return`<tr><td>${i+1}</td><td>${p.date}</td><td>${dh(p.amount)}</td><td>${p.mode}</td><td>${p.due||'-'}</td><td><span class="badge ${due.cls}">${due.label}</span></td><td><span class="badge ${paymentStatus(p)==='Impaye'?'b-bad':paymentStatus(p)==='DÃƒ'?'b-warn':'b-ok'}">${paymentStatus(p)}</span></td><td>${p.note||'-'}</td></tr>`}).join('');
-  const opRows=sum.ops.map((x,i)=>`<tr><td>${i+1}</td><td>${x.date}</td><td>${x.article}</td><td>${x.color||'-'}</td><td>${x.length||0} x ${x.width||0}</td><td>${siteName(x.site)}</td><td>${x.qty}</td><td>${sqm(surface(x.length,x.width,x.qty))}</td><td>${dh(x.pm2)}</td><td>${dh(x.total)}</td></tr>`).join('');
+  const opRows=sum.ops.map((x,i)=>`<tr><td>${i+1}</td><td>${x.date}</td><td>${x.article}</td><td>${x.color||'-'}</td><td>${x.length||0} x ${x.width||0}</td><td>${siteName(x.site)}</td><td>${x.qty}</td><td>${sqm(surface(x.length,x.width,x.qty))}</td><td>${dh(x.pm2)}</td><td style="color:${x.isBuyback?'var(--danger)':'inherit'}">${x.isBuyback?'-'+dh(x.total):dh(x.total)}</td></tr>`).join('');
   const selectHtml=`<option value="">Sélectionner</option>`+list.map(x=>`<option value="${x.name}" ${x.name===selected?'selected':''}>${x.name}</option>`).join('');
   return `<div class="panel-head"><div><h2>${title}</h2><p>Solde = initial + operations âË†' paiements.</p></div></div>
     <div class="form-grid">
@@ -2256,7 +2256,7 @@ function buildAccountReportHTML(type){
   const totalOpsFiltered=filteredOps.reduce((s,x)=>s+num(x.total),0);
   const totalPayFiltered=filteredPay.reduce((s,p)=>{if(p.deductNow===false)return p.paidStatus==='paid'?s+num(p.amount):s;return s+num(p.amount)},0);
   const periodLabel=fromVal||toVal?`${fromVal||'début'} -> ${toVal||'aujourd\'hui'}`:'Toutes les dates';
-  const opsRows=filteredOps.map((x,i)=>{const dim=`${x.length||0} x ${x.width||0} cm`;const pm2=hidePm2?'':`<td>${dh(x.pm2)}/m2</td>`;return`<tr><td>${i+1}</td><td>${x.date}</td><td>${operationKind(x)}</td><td>${x.article}</td><td>${x.color||'-'}</td><td>${dim}</td><td>${siteName(x.site)}</td><td>${x.qty}</td><td>${sqm(surface(x.length,x.width,x.qty))}</td>${pm2}<td>${dh(x.total)}</td></tr>`}).join('')||`<tr><td colspan="${hidePm2?9:10}" style="text-align:center;color:#9ca3af;padding:12px">Aucune opération sur cette période</td></tr>`;
+  const opsRows=filteredOps.map((x,i)=>{const dim=`${x.length||0} x ${x.width||0} cm`;const pm2=hidePm2?'':`<td>${dh(x.pm2)}/m2</td>`;return`<tr><td>${i+1}</td><td>${x.date}</td><td>${operationKind(x)}</td><td>${x.article}</td><td>${x.color||'-'}</td><td>${dim}</td><td>${siteName(x.site)}</td><td>${x.qty}</td><td>${sqm(surface(x.length,x.width,x.qty))}</td>${pm2}<td style="color:${x.isBuyback?'#dc2626':'inherit'}">${x.isBuyback?'-'+dh(x.total):dh(x.total)}</td></tr>`}).join('')||`<tr><td colspan="${hidePm2?9:10}" style="text-align:center;color:#9ca3af;padding:12px">Aucune opération sur cette période</td></tr>`;
   const payRows=filteredPay.map((p,i)=>`<tr><td>${i+1}</td><td>${p.date}</td><td>${dh(p.amount)}</td><td>${p.mode}</td><td>${p.due||'-'}</td><td>${paymentStatus(p)}</td><td>${p.note||'-'}</td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:12px">Aucun paiement sur cette période</td></tr>';
   const opsHead=hidePm2?'<th>#</th><th>Date</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Site</th><th>Qté</th><th>Surface</th><th>Total</th>':'<th>#</th><th>Date</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Site</th><th>Qté</th><th>Surface</th><th>Prix m2</th><th>Total</th>';
   const opsTotalColspan=hidePm2?9:10;
@@ -2372,7 +2372,7 @@ async function buildJsPDF(type,name,entity,sum,r){
   y+=24;
   y+=4;FS(10);FC(30,41,59);TX('Op\u00e9rations ('+r.filteredOps.length+')',ml,y);y+=6;
   const opsHead=[{text:'#',colW:8},{text:'Date',colW:15},{text:'Type',colW:14},{text:'Article',colW:24},{text:'Couleur',colW:14},{text:'Dim.',colW:16},{text:'Site',colW:16},{text:'Qt\u00e9',colW:10},{text:'Surface',colW:14},{text:'Prix m2',colW:14},{text:'Total',colW:17}];
-  const opsBody=r.filteredOps.map(x=>[String(r.filteredOps.indexOf(x)+1),x.date||'',operationKind(x),x.article||'',x.color||'-',(x.length||0)+'x'+(x.width||0),siteName(x.site),String(x.qty||0),sqm(surface(x.length,x.width,x.qty)),dh(x.pm2),dh(x.total)]);
+  const opsBody=r.filteredOps.map(x=>[String(r.filteredOps.indexOf(x)+1),x.date||'',operationKind(x),x.article||'',x.color||'-',(x.length||0)+'x'+(x.width||0),siteName(x.site),String(x.qty||0),sqm(surface(x.length,x.width,x.qty)),dh(x.pm2),x.isBuyback?'-'+dh(x.total):dh(x.total)]);
   opsBody.push([{content:'TOTAL OP\u00c9RATIONS',colSpan:10,styles:{halign:'left',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}},{content:dh(r.totalOpsFiltered),styles:{halign:'right',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}}]);
   FN();doc.autoTable({startY:y,head:[opsHead.map(h=>({content:h.text,styles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7,fontStyle:'bold',halign:'center',cellPadding:1.5}}))],body:opsBody,theme:'plain',margin:{left:ml,right:ml},tableWidth:w,columnStyles:opsHead.reduce((a,h)=>(a[h.text]={cellWidth:h.colW,halign:'center'},a),{}),headStyles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7,fontStyle:'bold'},bodyStyles:{fontSize:7,cellPadding:1.5},alternateRowStyles:{fillColor:[248,250,252]},didDrawPage:function(d){y=d.cursor.y}});
   y+=8;FS(10);FC(30,41,59);TX('Paiements ('+r.filteredPay.length+')',ml,y);y+=6;
