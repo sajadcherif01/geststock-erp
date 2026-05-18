@@ -118,6 +118,10 @@ function objToRow(tbl,obj){
       if(key==='from')col='from_site';
       if(key==='to')col='to_site';
     }
+    if(key==='isBuyback'){
+      if(val)row.note='[RACHAT]'+(row.note||'');
+      continue;
+    }
     row[col]=val;
   }
   return row;
@@ -132,6 +136,10 @@ function rowToObj(tbl,row){
       if(key==='to_site')jsKey='to';
     }
     obj[jsKey]=val;
+  }
+  if(tbl==='geststock_sales'&&(obj.note||'').startsWith('[RACHAT]')){
+    obj.isBuyback=true;
+    obj.note=obj.note.slice(8);
   }
   return obj;
 }
@@ -314,6 +322,8 @@ async function loadFromSupabase(silent=false){
         isApplyingRemote=true;
         TABLE_KEYS.forEach((key,i)=>{db[key]=allData[i].map(r=>rowToObj(TABLE_MAP[key],r))});
         if(userData&&userData.length>0)users=userData.map(rowToUser);
+        // Recover buyback flags from blob (for data synced before [RACHAT] convention)
+        try{const{data:bs}=await supabaseClient.from('geststock_state').select('payload').eq('id',SUPABASE_STATE_ID).single();if(bs?.payload?.data?.sales){const bm=new Map();bs.payload.data.sales.filter(s=>s.isBuyback).forEach(s=>bm.set(s.id,true));db.sales.forEach(s=>{if(bm.has(s.id))s.isBuyback=true})}}catch(e){}
         save({remote:false});
         refresh();
         isApplyingRemote=false;
@@ -1450,7 +1460,7 @@ function renderAnalytics(){
   // â"â‚¬â"â‚¬ ROTATION STOCK â"â‚¬â"â‚¬
   const rotRows=stockRows().map(r=>{
     const stock=globalQty(r.key);
-    const soldInPeriod=db.sales.filter(s=>s.article===r.article&&(!analyticsPeriod||dateInPeriod(s.date,analyticsPeriod))).reduce((s,x)=>s+num(x.qty),0);
+    const soldInPeriod=db.sales.filter(s=>s.article===r.article&&!s.isBuyback&&(!analyticsPeriod||dateInPeriod(s.date,analyticsPeriod))).reduce((s,x)=>s+num(x.qty),0);
     const periodDays=analyticsPeriod||365;
     const rotationAnnuelle=stock>0?(soldInPeriod/stock*(365/periodDays)):0;
     const joursStockage=soldInPeriod>0?Math.round(stock/soldInPeriod*periodDays):null;

@@ -96,6 +96,7 @@ create table if not exists public.geststock_sales (
   source_length numeric default 0,
   remaining_length numeric default 0,
   source_key text default '',
+  is_buyback boolean default false,
   updated_at timestamptz not null default now()
 );
 
