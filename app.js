@@ -280,7 +280,6 @@ function scheduleRemoteSave(){
 function initSupabase(){
   if(!supabaseUrl||!supabaseAnonKey||!window.supabase)return false;
   supabaseClient=window.supabase.createClient(supabaseUrl,supabaseAnonKey);
-  subscribeSupabaseRealtime();
   updateSyncStatus();
   return true;
 }
@@ -293,6 +292,7 @@ function saveSupabaseConfig(){
   localStorage.setItem('gs3_supabase_url',supabaseUrl);
   localStorage.setItem('gs3_supabase_anon_key',supabaseAnonKey);
   initSupabase();
+  subscribeSupabaseRealtime();
   setTimeout(()=>saveToSupabase(false),500);
   notify('Supabase configure. Synchronisation temps reel active.');
 }
@@ -485,7 +485,7 @@ function subscribeSupabaseRealtime(){
   const userCh=supabaseClient
     .channel(USERS_TABLE+'-realtime')
     .on('postgres_changes',{event:'*',schema:'public',table:USERS_TABLE},payload=>{
-      if(isApplyingRemote||isSavingToSupabase)return;
+      if(isApplyingRemote||isSavingToSupabase||!isDataLoaded)return;
       const{eventType,new:newRow,old:oldRow}=payload;
       if(eventType==='INSERT'&&newRow){const u=rowToUser(newRow);if(!users.find(x=>x.id===u.id)){users.push(u);onRemoteChange();save({remote:false});debouncedRefresh()}}
       else if(eventType==='UPDATE'&&newRow){const u=rowToUser(newRow);const idx=users.findIndex(x=>x.id===u.id);if(idx>=0){users[idx]=u;onRemoteChange();save({remote:false});debouncedRefresh()}}
@@ -505,7 +505,7 @@ function onRemoteChange(){
   }
 }
 function handleTableChange(key,tableName,payload){
-  if(isApplyingRemote||isSavingToSupabase)return;
+  if(isApplyingRemote||isSavingToSupabase||!isDataLoaded)return;
   const{eventType,new:newRow,old:oldRow}=payload;
   if(eventType==='INSERT'&&newRow){
     const obj=rowToObj(tableName,newRow);
@@ -2825,6 +2825,7 @@ isApplyingRemote=false;
 initSupabase();
 idbTryLoad();
 (supabaseClient?loadFromSupabase(true):Promise.resolve()).then(()=>{
+  if(supabaseClient)subscribeSupabaseRealtime();
   if(!currentUser){
     const keepUser=supabaseClient&&users.find(u=>u.keepOnline);
     if(keepUser){
