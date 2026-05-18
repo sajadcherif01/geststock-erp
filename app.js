@@ -695,7 +695,9 @@ function accountSummary(type,name){
   const entity=(type==='client'?db.clients:db.suppliers).find(x=>x.name===name);
   const init=num(entity?.initial||0);
   const ops=(type==='client'?db.sales:db.purchases).filter(x=>(type==='client'?x.client:x.supplier)===name);
-  const totalOps=ops.reduce((s,x)=>{const v=num(x.total);return x.isBuyback?s-v:s+v},0);
+  const totalSales=ops.reduce((s,x)=>x.isBuyback?s:s+num(x.total),0);
+  const totalBuybacks=ops.reduce((s,x)=>x.isBuyback?s+num(x.total):s,0);
+  const totalOps=totalSales-totalBuybacks;
   const payments=db.payments.filter(x=>x.type===type&&x.name===name);
   // Only deduct payments that are deductNow=true, OR have no due date, OR due date has passed
   const today_=new Date();today_.setHours(0,0,0,0);
@@ -709,7 +711,7 @@ function accountSummary(type,name){
     // default: always deduct (deductNow=true or legacy payments without flag)
     return s+num(x.amount);
   },0);
-  return{entity,init,totalOps,totalPay,balance:init+totalOps-totalPay,ops,payments};
+  return{entity,init,totalSales,totalBuybacks,totalOps,totalPay,balance:init+totalOps-totalPay,ops,payments};
 }
 function dueState(d){if(!d)return{label:'-',cls:'b-brand'};const t=new Date(today()),x=new Date(d);t.setHours(0,0,0,0);x.setHours(0,0,0,0);const days=Math.round((x-t)/86400000);if(days<0)return{label:`Depassee (${Math.abs(days)}j)`,cls:'b-bad'};if(days===0)return{label:"Aujourd'hui",cls:'b-warn'};return{label:`${days}j`,cls:days<=7?'b-warn':'b-ok'}}
 function paymentStatus(p){
@@ -1243,7 +1245,8 @@ function renderAccountPanel(type,title){
     </div>
     <div class="summary">
       <div class="box"><div class="k">Solde initial</div><div class="v">${dh(sum.init)}</div></div>
-      <div class="box"><div class="k">Total operations</div><div class="v">${dh(sum.totalOps)}</div></div>
+      <div class="box"><div class="k">Total ventes</div><div class="v">${dh(sum.totalSales)}</div></div>
+      ${type==='client'&&sum.totalBuybacks>0?`<div class="box"><div class="k">Total rachats</div><div class="v" style="color:var(--danger)">-${dh(sum.totalBuybacks)}</div></div>`:''}
       <div class="box"><div class="k">Total paiements</div><div class="v">${dh(sum.totalPay)}</div></div>
       <div class="box ${num(sum.balance)>0?'':''}"><div class="k">Solde restant</div><div class="v" style="color:${num(sum.balance)>0?'var(--ok)':'var(--danger)'}">${dh(sum.balance)}</div></div>
     </div>
@@ -2253,7 +2256,9 @@ function buildAccountReportHTML(type){
   const hidePm2=$(type+'-print-hide-pm2')?.checked||false;
   const filteredOps=sum.ops.filter(x=>{if(!x.date)return true;if(fromVal&&x.date<fromVal)return false;if(toVal&&x.date>toVal)return false;return true});
   const filteredPay=sum.payments.filter(p=>{if(!p.date)return true;if(fromVal&&p.date<fromVal)return false;if(toVal&&p.date>toVal)return false;return true});
-  const totalOpsFiltered=filteredOps.reduce((s,x)=>s+num(x.total),0);
+  const totalSalesFiltered=filteredOps.reduce((s,x)=>x.isBuyback?s:s+num(x.total),0);
+  const totalBuybacksFiltered=filteredOps.reduce((s,x)=>x.isBuyback?s+num(x.total):s,0);
+  const totalOpsFiltered=totalSalesFiltered-totalBuybacksFiltered;
   const totalPayFiltered=filteredPay.reduce((s,p)=>{if(p.deductNow===false)return p.paidStatus==='paid'?s+num(p.amount):s;return s+num(p.amount)},0);
   const periodLabel=fromVal||toVal?`${fromVal||'début'} -> ${toVal||'aujourd\'hui'}`:'Toutes les dates';
   const opsRows=filteredOps.map((x,i)=>{const dim=`${x.length||0} x ${x.width||0} cm`;const pm2=hidePm2?'':`<td>${dh(x.pm2)}/m2</td>`;return`<tr><td>${i+1}</td><td>${x.date}</td><td>${operationKind(x)}</td><td>${x.article}</td><td>${x.color||'-'}</td><td>${dim}</td><td>${siteName(x.site)}</td><td>${x.qty}</td><td>${sqm(surface(x.length,x.width,x.qty))}</td>${pm2}<td style="color:${x.isBuyback?'#dc2626':'inherit'}">${x.isBuyback?'-'+dh(x.total):dh(x.total)}</td></tr>`}).join('')||`<tr><td colspan="${hidePm2?9:10}" style="text-align:center;color:#9ca3af;padding:12px">Aucune opération sur cette période</td></tr>`;
@@ -2283,13 +2288,13 @@ tfoot td{background:#f0fdf4;font-weight:700}tr:nth-child(even) td{background:#fa
 @media print{body{padding:12px}.cards{grid-template-columns:repeat(4,1fr)}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}.card{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head><body>
 <div class="header"><div class="header-left"><h1>${type==='client'?'Compte client':'Compte fournisseur'} - ${name}</h1><p>Ville : ${entity?.city||'-'}</p><div class="period-badge">Periode : ${periodLabel}</div></div><div class="header-right">Imprime le ${dateStr}<br>a ${timeStr}<br>${hidePm2?'<span style="color:#d97706;font-weight:600">Prix m2 masque</span>':''}</div></div>
-<div class="cards"><div class="card"><div class="k">Solde initial</div><div class="v">${dh(sum.init)}</div></div><div class="card"><div class="k">Operations (periode)</div><div class="v">${dh(totalOpsFiltered)}</div></div><div class="card"><div class="k">Paiements (periode)</div><div class="v">${dh(totalPayFiltered)}</div></div><div class="card ${sum.balance>0?'green':'red'}"><div class="k">Solde global restant</div><div class="v" style="color:${sum.balance>0?'#059669':'#dc2626'}">${dh(sum.balance)}</div></div></div>
+<div class="cards"><div class="card"><div class="k">Solde initial</div><div class="v">${dh(sum.init)}</div></div><div class="card"><div class="k">${type==='client'?'Total ventes':'Operations'}</div><div class="v">${dh(type==='client'?totalSalesFiltered:totalOpsFiltered)}</div></div>${type==='client'&&totalBuybacksFiltered>0?`<div class="card" style="border-color:#fca5a5"><div class="k">Total rachats</div><div class="v" style="color:#dc2626">-${dh(totalBuybacksFiltered)}</div></div>`:''}<div class="card"><div class="k">Paiements (periode)</div><div class="v">${dh(totalPayFiltered)}</div></div><div class="card ${sum.balance>0?'green':'red'}"><div class="k">Solde global restant</div><div class="v" style="color:${sum.balance>0?'#059669':'#dc2626'}">${dh(sum.balance)}</div></div></div>
 <h2>Operations <span>(${filteredOps.length} ligne(s)${fromVal||toVal?' - periode filtree':''})</span></h2>
 <table><thead><tr>${opsHead.replace('<th>Article</th>','<th>Type</th><th>Article/Frais</th>')}</tr></thead><tbody>${opsRows}</tbody><tfoot><tr><td colspan="${opsTotalColspan}"><strong>TOTAL OPERATIONS</strong></td><td><strong>${dh(totalOpsFiltered)}</strong></td></tr></tfoot></table>
 <h2>Paiements <span>(${filteredPay.length} ligne(s)${fromVal||toVal?' - periode filtree':''})</span></h2>
 <table><thead><tr><th>#</th><th>Date</th><th>Montant</th><th>Mode</th><th>Echeance</th><th>Statut</th><th>Remarque</th></tr></thead><tbody>${payRows}</tbody><tfoot><tr><td colspan="2"><strong>TOTAL PAIEMENTS</strong></td><td><strong>${dh(totalPayFiltered)}</strong></td><td colspan="4"></td></tr></tfoot></table>
 <div class="footer">SayfoFlex - Document genere le ${dateStr} a ${timeStr} | Periode : ${periodLabel}</div>
-</body></html>`,name,filteredOps,filteredPay,totalOpsFiltered,totalPayFiltered,fromVal,toVal,periodLabel};
+</body></html>`,name,filteredOps,filteredPay,totalOpsFiltered,totalPayFiltered,fromVal,toVal,periodLabel,totalSalesFiltered,totalBuybacksFiltered};
 }
 function printAccount(type){
   const r=buildAccountReportHTML(type);if(!r.name)return alert('Veuillez sÃ©lectionner un '+(type==='client'?'client':'fournisseur'));
@@ -2355,13 +2360,15 @@ async function buildJsPDF(type,name,entity,sum,r){
   y+=7;
   FS(7);FC(100,116,139);TX('Application de gestion de l\u2019entreprise professionnel d\u00e9velopp\u00e9 par Sayfo Flex',ml,y);
   y+=8;
+  const hasBuybacks=type==='client'&&r.totalBuybacksFiltered>0;
   const cards=[
     {bg:[239,246,255],lb:'Solde initial',val:r.init,vc:[29,78,216]},
-    {bg:[245,243,255],lb:'Op\u00e9rations (p\u00e9riode)',val:dh(r.totalOpsFiltered),vc:[124,58,237]},
+    {bg:[245,243,255],lb:hasBuybacks?'Total ventes':'Op\u00e9rations (p\u00e9riode)',val:dh(hasBuybacks?r.totalSalesFiltered:r.totalOpsFiltered),vc:[124,58,237]},
+    ...(hasBuybacks?[{bg:[254,242,242],lb:'Total rachats',val:'-'+dh(r.totalBuybacksFiltered),vc:[220,38,38]}]:[]),
     {bg:[255,247,237],lb:'Paiements (p\u00e9riode)',val:dh(r.totalPayFiltered),vc:[234,88,12]},
     {bg:sum.balance>0?[240,253,244]:[254,242,242],lb:'Solde restant',val:dh(sum.balance),vc:sum.balance>0?[22,163,74]:[220,38,38]}
   ];
-  const cw=(w-12)/4;
+  const cw=(w-12)/cards.length;
   cards.forEach((c,i)=>{
     const cx=ml+i*(cw+4)+1;
     doc.setFillColor(c.bg[0],c.bg[1],c.bg[2]);doc.roundedRect(cx,y,cw,18,2,2,'F');
