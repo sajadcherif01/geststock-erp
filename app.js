@@ -17,7 +17,7 @@ let forcePwUser=null;
 // â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬ DB â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬
 const CKEYS=['articles','clients','suppliers','sites','purchases','sales','transfers','inventories','clientPrices','supplierPrices','payments','rolls','rollCuts'];
 let db={articles:[],clients:[],suppliers:[],sites:[],purchases:[],sales:[],transfers:[],inventories:[],clientPrices:[],supplierPrices:[],payments:[],rolls:[],rollCuts:[]};
-let sessionLines={purchase:[],sale:[],transfer:[],inventory:[]};
+let sessionLines={purchase:[],sale:[],transfer:[],inventory:[],buyback:[]};
 let edit={article:-1,client:-1,supplier:-1,site:-1,cp:-1,sp:-1};
 let view={clientAccount:'',supplierAccount:''};
 let confirmCallback=null;
@@ -172,7 +172,7 @@ function applyAccessMode(){
   const login=$('role-login'),logout=$('role-logout');
   if(login)login.style.display=currentUser?'none':'inline-flex';
   if(logout)logout.style.display=currentUser?'inline-flex':'none';
-  const writeNames=['saveArticle','saveClient','saveSupplier','saveSite','saveClientPrice','saveSupplierPrice','saveUser','deleteUser','savePurchase','saveSale','saveTransfer','saveInventory','saveAccountPayment','confirmSession','removeRow','removeSite','removeSessionLine','openEditLine','editOperationRow','deleteOperationRow','editPayment','deletePayment','setPaymentPaidStatus','togglePaymentPaid','restoreFromHistory','promptClientFee','createClientFee','editArticle','editClientRow','editSupplierRow','editSiteRow','editClientPrice','editSupplierPrice','clearForm','clearFormMv','clearFormInv','importExcelInventaire','confirmExcelInventaire','cancelExcelInventaire','applyResetStock','exportBackup','saveSupabaseConfig','manualSyncToSupabase','loadFromSupabase'];
+  const writeNames=['saveArticle','saveClient','saveSupplier','saveSite','saveClientPrice','saveSupplierPrice','saveUser','deleteUser','savePurchase','saveSale','saveBuyback','saveTransfer','saveInventory','saveAccountPayment','confirmSession','removeRow','removeSite','removeSessionLine','openEditLine','editOperationRow','deleteOperationRow','editPayment','deletePayment','setPaymentPaidStatus','togglePaymentPaid','restoreFromHistory','promptClientFee','createClientFee','editArticle','editClientRow','editSupplierRow','editSiteRow','editClientPrice','editSupplierPrice','clearForm','clearFormMv','clearFormInv','importExcelInventaire','confirmExcelInventaire','cancelExcelInventaire','applyResetStock','exportBackup','saveSupabaseConfig','manualSyncToSupabase','loadFromSupabase'];
   document.querySelectorAll('button').forEach(btn=>{
     const onclick=btn.getAttribute('onclick')||'';
     const id=btn.id||'';
@@ -590,7 +590,7 @@ function notify(msg,isError=false){
 function stockQty(key,siteId){
   let q=0;
   db.purchases.forEach(x=>{if(x.key===key&&x.site===siteId)q+=num(x.qty)});
-  db.sales.forEach(x=>{if(!x.stockIgnore&&x.key===key&&x.site===siteId)q-=num(x.qty)});
+  db.sales.forEach(x=>{if(!x.stockIgnore&&x.key===key&&x.site===siteId)q+=x.isBuyback?num(x.qty):-num(x.qty)});
   db.transfers.forEach(x=>{if(x.key===key&&x.from===siteId)q-=num(x.qty);if(x.key===key&&x.to===siteId)q+=num(x.qty)});
   db.inventories.forEach(x=>{if(x.key===key&&x.site===siteId)q+=num(x.adjust)});
   return q;
@@ -695,7 +695,7 @@ function accountSummary(type,name){
   const entity=(type==='client'?db.clients:db.suppliers).find(x=>x.name===name);
   const init=num(entity?.initial||0);
   const ops=(type==='client'?db.sales:db.purchases).filter(x=>(type==='client'?x.client:x.supplier)===name);
-  const totalOps=ops.reduce((s,x)=>s+num(x.total),0);
+  const totalOps=ops.reduce((s,x)=>{const v=num(x.total);return x.isBuyback?s-v:s+v},0);
   const payments=db.payments.filter(x=>x.type===type&&x.name===name);
   // Only deduct payments that are deductNow=true, OR have no due date, OR due date has passed
   const today_=new Date();today_.setHours(0,0,0,0);
@@ -955,6 +955,41 @@ function renderMovements(){
         <td><button class="btn sm danger" onclick="removeSessionLine('sale',${i})">&#x2715;</button>
             <button class="btn sm alt" onclick="openEditLine('sale',${i})">&#x270f;</button></td>
       </tr>`),'sale')}`;
+
+  // BUYBACK - rachat client
+  $('mv-buyback').innerHTML=`
+    <div class="panel-head"><div><h2>Rachat Rachat client</h2><p>Achetez de la marchandise aupres d un client. Le stock augmente et une ecriture creditrice est ajoutee au compte client.</p></div></div>
+    <div class="quick-entry">
+      <h4>Saisie rapide</h4>
+      <div class="form-grid tight">
+        <div class="field"><label>Date</label><input id="b-date" type="date"></div>
+        <div class="field"><label>Client</label><select id="b-client">${opt(db.clients,'Client')}</select></div>
+        <div class="field"><label>Article</label><select id="b-article">${opt(db.articles,'Article')}</select></div>
+        <div class="field"><label>Site IN</label><select id="b-site">${opt(db.sites,'Site','id','name')}</select></div>
+        <div class="field"><label>Couleur</label><input id="b-color" placeholder="Couleur" list="b-color-list"><datalist id="b-color-list">${[...new Set(db.sales.map(x=>x.color))].filter(Boolean).map(c=>'<option value="'+attr(c)+'">').join('')}</datalist></div>
+        <div class="field"><label>Longueur (cm)</label><input id="b-length" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label>Largeur (cm)</label><input id="b-width" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label>Quantite</label><input id="b-qty" type="number" step="1" placeholder="0"></div>
+        <div class="field"><label>Prix m2</label><input id="b-pm2" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label>Remarque</label><input id="b-note" placeholder="Optionnel"></div>
+      </div>
+    </div>
+    <div class="summary">
+      <div class="box"><div class="k">Surface</div><div class="v" id="b-surface">0.00 m2</div></div>
+      <div class="box"><div class="k">Total</div><div class="v" id="b-total">0.00 DH</div></div>
+    </div>
+    <div class="toolbar">
+      <button class="btn primary" onclick="saveBuyback()">+ Ajouter ligne</button>
+      <button class="btn" onclick="clearFormMv('buyback')">Annuler</button>
+    </div>
+    ${renderSessionTable('buyback',['#','Date','Client','Article','Couleur','Long.','Larg.','Qte','Prix m2','Total',''],
+      sessionLines.buyback.map((r,i)=>`<tr>
+        <td>${i+1}</td><td>${h(r.date)}</td><td>${h(r.client)}</td><td>${h(r.article)}</td>
+        <td>${h(r.color)}</td><td>${h(r.length)}</td><td>${h(r.width)}</td><td>${h(r.qty)}</td>
+        <td>${dh(r.pm2)}</td><td>${dh(r.total)}</td>
+        <td><button class="btn sm danger" onclick="removeSessionLine('buyback',${i})">X</button>
+            <button class="btn sm alt" onclick="openEditLine('buyback',${i})">Edit</button></td>
+      </tr>`),'rachat')}`;
   // TRANSFER
   $('mv-transfer').innerHTML=`
     <div class="panel-head"><div><h2>ââ€ " Transfert intersite</h2><p>Deplacez du stock entre sites.</p></div></div>
@@ -985,8 +1020,9 @@ function renderMovements(){
   // HISTORY
   const hist=[
     ...db.purchases.map(x=>({date:x.date,type:'Achat',article:x.article,color:x.color,length:x.length,width:x.width,site:siteName(x.site),partner:x.supplier,qty:x.qty,total:x.total,note:x.note||'-'})),
-    ...db.sales.map(x=>({date:x.date,type:'Vente',article:x.article,color:x.color,length:x.length,width:x.width,site:siteName(x.site),partner:x.client,qty:x.qty,total:x.total,note:x.note||'-'})),
-    ...db.transfers.map(x=>({date:x.date,type:'Transfert',article:x.article,color:x.color,length:x.length,width:x.width,site:`${siteName(x.from)} ââ€ ' ${siteName(x.to)}`,partner:'-',qty:x.qty,total:0,note:x.note||'-'})),
+    ...db.sales.filter(x=>!x.isBuyback).map(x=>({date:x.date,type:'Vente',article:x.article,color:x.color,length:x.length,width:x.width,site:siteName(x.site),partner:x.client,qty:x.qty,total:x.total,note:x.note||'-'})),
+    ...db.sales.filter(x=>x.isBuyback).map(x=>({date:x.date,type:'Rachat',article:x.article,color:x.color,length:x.length,width:x.width,site:siteName(x.site),partner:x.client,qty:x.qty,total:x.total,note:x.note||'-'})),
+    ...db.transfers.map(x=>({date:x.date,type:'Transfert',article:x.article,color:x.color,length:x.length,width:x.width,site:`${siteName(x.from)} -> ${siteName(x.to)}`,partner:'-',qty:x.qty,total:0,note:x.note||'-'})),
   ].sort((a,b)=>b.date.localeCompare(a.date));
 
   $('mv-history').innerHTML=`
@@ -994,7 +1030,7 @@ function renderMovements(){
     <div class="table-wrap"><table class="table">
       <thead><tr><th>#</th><th>Date</th><th>Type</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Site</th><th>Partenaire</th><th>Qte</th><th>Total</th><th>Note</th></tr></thead>
       <tbody>${hist.length?hist.map((r,i)=>`<tr><td>${i+1}</td><td>${h(r.date)}</td>
-        <td><span class="badge ${r.type==='Achat'?'b-brand':r.type==='Vente'?'b-ok':'b-purple'}">${r.type}</span></td>
+        <td><span class="badge ${r.type==='Achat'?'b-brand':r.type==='Vente'?'b-ok':r.type==='Rachat'?'b-warn':'b-purple'}">${r.type}</span></td>
         <td>${h(r.article)}</td><td>${h(r.color||'-')}</td><td>${r.length&&r.width?h(r.length+' x '+r.width):'-'}</td>
         <td>${h(r.site)}</td><td>${h(r.partner)}</td><td>${h(r.qty)}</td><td>${r.total?dh(r.total):'-'}</td><td>${h(r.note)}</td></tr>`).join(''):`<tr><td class="empty" colspan="11">Aucun mouvement</td></tr>`}</tbody>
     </table></div>`;
@@ -1233,7 +1269,7 @@ function renderStock(){
   }
   function renderStockBody(list){
     return list.length?list.map((r,i)=>{
-      const recentSales=db.sales.filter(s=>s.article===r.article).reduce((s,x)=>s+num(x.qty),0);
+      const recentSales=db.sales.filter(s=>!s.isBuyback&&s.article===r.article).reduce((s,x)=>s+num(x.qty),0);
       const suggest=r.qty<Math.max(2,recentSales)?'RÃƒ©appro conseillÃƒ©':'Stock stable';
       return`<tr data-search="${[r.article,r.color,r.length,r.width].join(' ').toLowerCase()}">
         <td>${i+1}</td><td>${r.article}</td><td>${r.color}</td>
@@ -1271,7 +1307,7 @@ function renderStock(){
     <div class="table-wrap"><table class="table" id="stk-global-table">
       <thead><tr><th>#</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Qte</th><th>Surface</th><th>Valeur</th><th>Suggestion</th></tr></thead>
       <tbody id="stk-global-body">${rows.length?rows.map((r,i)=>{
-        const recentSales=db.sales.filter(s=>s.article===r.article).reduce((s,x)=>s+num(x.qty),0);
+        const recentSales=db.sales.filter(s=>!s.isBuyback&&s.article===r.article).reduce((s,x)=>s+num(x.qty),0);
         const suggest=r.qty<Math.max(2,recentSales)?'Réappro conseillé':'Stock stable';
         // Compute site ids that have this item
         const siteIds=db.sites.map(s=>s.id).filter(sid=>stockQty(r.key,sid)>0).join(',');
@@ -1309,8 +1345,8 @@ function renderStock(){
       </tbody>
     </table></div>`;
 
-  const aiRows=rows.filter(r=>r.qty>0||db.sales.some(s=>s.article===r.article)).map(r=>{
-    const sold=db.sales.filter(s=>s.article===r.article).reduce((s,x)=>s+num(x.qty),0);
+  const aiRows=rows.filter(r=>r.qty>0||db.sales.some(s=>!s.isBuyback&&s.article===r.article)).map(r=>{
+    const sold=db.sales.filter(s=>!s.isBuyback&&s.article===r.article).reduce((s,x)=>s+num(x.qty),0);
     const bought=db.purchases.filter(p=>p.article===r.article).reduce((s,x)=>s+num(x.qty),0);
     const imported=db.inventories.filter(iv=>iv.article===r.article&&iv.adjust>0).reduce((s,x)=>s+num(x.adjust),0);
     const score=sold>0?((sold+1)/(Math.max(1,r.qty))).toFixed(2):'0.00';
@@ -1354,7 +1390,7 @@ function renderAnalytics(){
   const periodLabel={7:'7 jours',30:'30 jours',90:'3 mois',180:'6 mois',365:'1 an',0:'Tout'};
 
   // â"â‚¬â"â‚¬ TOP VENTES â"â‚¬â"â‚¬
-  const sales=db.sales.filter(s=>dateInPeriod(s.date,analyticsPeriod||0));
+  const sales=db.sales.filter(s=>!s.isBuyback&&dateInPeriod(s.date,analyticsPeriod||0));
   const saleByArticle={};
   sales.forEach(s=>{
     if(!saleByArticle[s.article])saleByArticle[s.article]={article:s.article,qty:0,total:0,count:0};
@@ -1543,8 +1579,8 @@ function renderAnalytics(){
 
 // â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬ METRICS â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬
 function updateMetrics(){
-  const totalPurchase=db.purchases.reduce((s,x)=>s+num(x.total),0);
-  const totalSale=db.sales.reduce((s,x)=>s+num(x.total),0);
+  const totalPurchase=db.purchases.reduce((s,x)=>s+num(x.total),0)+db.sales.filter(x=>x.isBuyback).reduce((s,x)=>s+num(x.total),0);
+  const totalSale=db.sales.filter(x=>!x.isBuyback).reduce((s,x)=>s+num(x.total),0);
   const stock=stockRows().reduce((s,r)=>s+globalQty(r.key),0);
   const surfaceTotal=stockRows().reduce((s,r)=>s+surface(r.length,r.width,globalQty(r.key)),0);
   $('m-articles').textContent=db.articles.length;
@@ -1682,7 +1718,21 @@ function saveSale(){
   $('s-qty').value='';
   notify('Ligne ajoutee - cliquez Confirmer pour enregistrer');
 }
-// â”€â”€â”€â”€â”€ HORS STOCK MODE â”€â”€â”€â”€â”€
+function saveBuyback(){
+  const client=$('b-client').value,article=$('b-article').value,site=$('b-site').value,
+    color=norm($('b-color').value),length=num($('b-length').value),width=num($('b-width').value),
+    qty=intv($('b-qty').value),pm2=num($('b-pm2').value),date=$('b-date').value,note=norm($('b-note').value);
+  if(!client||!article||!site||!date||!color||!length||!width||qty<=0||pm2<=0)return alert('Champs rachat incomplets');
+  if(isMoquetteArticle(article))return alert('Le rachat de moquette n\'est pas supporte.');
+  const key=keyOf(article,color,length,width),total=surface(length,width,qty)*pm2;
+  sessionLines.buyback.push({client,article,site,color,length,width,qty,pm2,date,note,key,total,isBuyback:true});
+  const saved={client,article,site,color,length,width,pm2,date,note};
+  renderMovements();
+  Object.entries(saved).forEach(([k,v])=>{const el=$(`b-${k}`);if(el)el.value=v});
+  $('b-qty').value='';
+  notify('Ligne de rachat ajoutee - cliquez Confirmer pour enregistrer');
+}
+// ----- HORS STOCK MODE -----
 window.onHorsStockChange=function(){
   const hs=$('s-hors-stock')?.checked;
   if(!hs){
@@ -1824,10 +1874,10 @@ function removeSessionLine(type,i){sessionLines[type].splice(i,1);if(type==='inv
 function setAccountView(type,value){view[type+'Account']=value;refresh()}
 
 // ===== EDIT DELETE =====
-function operationArrayName(type){return{purchase:'purchases',sale:'sales',transfer:'transfers',inventory:'inventories',payment:'payments'}[type]||type}
+function operationArrayName(type){return{purchase:'purchases',sale:'sales',buyback:'sales',transfer:'transfers',inventory:'inventories',payment:'payments'}[type]||type}
 function recalcOperationRow(type,r){
-  if(['purchase','sale','transfer','inventory'].includes(type))r.key=keyOf(r.article,r.color,r.length,r.width);
-  if(type==='purchase'||type==='sale')r.total=surface(r.length,r.width,r.qty)*num(r.pm2);
+  if(['purchase','sale','buyback','transfer','inventory'].includes(type))r.key=keyOf(r.article,r.color,r.length,r.width);
+  if(type==='purchase'||type==='sale'||type==='buyback')r.total=surface(r.length,r.width,r.qty)*num(r.pm2);
 }
 function editOperationRow(type,id){
   if(!requireAdmin())return;
@@ -1919,7 +1969,7 @@ function openEditLine(type,i){
   const r=sessionLines[type][i];
   editLineState={type,index:i};
   $('edit-line-title').textContent=`Modifier ligne ${i+1}`;
-  $('edit-line-sub').textContent=type==='purchase'?'Achat fournisseur':'Vente client';
+  $('edit-line-sub').textContent=type==='purchase'?'Achat fournisseur':type==='buyback'?'Rachat client':'Vente client';
   const fields=[
     {id:'el-date',label:'Date',type:'date',val:r.date},
     {id:'el-color',label:'Couleur',type:'text',val:r.color},
@@ -1964,7 +2014,7 @@ $('edit-line-save').addEventListener('click',function(){
 // â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬ CONFIRM SESSION â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬
 function confirmSession(type){
   if(!sessionLines[type].length)return;
-  const titles={purchase:'Confirmer les achats',sale:'Confirmer les ventes',transfer:'Confirmer les transferts',inventory:'Confirmer les ajustements'};
+  const titles={purchase:'Confirmer les achats',sale:'Confirmer les ventes',transfer:'Confirmer les transferts',inventory:'Confirmer les ajustements',buyback:'Confirmer les rachats clients'};
   const counts=sessionLines[type].length;
   $('confirm-modal-title').textContent=titles[type];
   $('confirm-modal-desc').textContent=`${counts} ligne(s) vont etre enregistrees definitivement.`;
@@ -1972,7 +2022,8 @@ function confirmSession(type){
   if(type==='purchase'){thead='<tr><th>#</th><th>Date</th><th>Fournisseur</th><th>Article</th><th>Couleur</th><th>Long.</th><th>Larg.</th><th>Qte</th><th>Total</th></tr>';tbody=sessionLines.purchase.map((r,i)=>`<tr><td>${i+1}</td><td>${h(r.date)}</td><td>${h(r.supplier)}</td><td>${h(r.article)}</td><td>${h(r.color)}</td><td>${h(r.length)}</td><td>${h(r.width)}</td><td>${h(r.qty)}</td><td>${dh(r.total)}</td></tr>`).join('');}
   else if(type==='sale'){thead='<tr><th>#</th><th>Date</th><th>Client</th><th>Article</th><th>Couleur</th><th>Long.</th><th>Larg.</th><th>Qte</th><th>Total</th></tr>';tbody=sessionLines.sale.map((r,i)=>`<tr><td>${i+1}</td><td>${h(r.date)}</td><td>${h(r.client)}</td><td>${h(r.article)}</td><td>${h(r.color)}</td><td>${h(r.length)}</td><td>${h(r.width)}</td><td>${h(r.qty)}</td><td>${dh(r.total)}</td></tr>`).join('');}
   else if(type==='transfer'){thead='<tr><th>#</th><th>Date</th><th>Article</th><th>Couleur</th><th>Long.</th><th>Larg.</th><th>Qte</th><th>De</th><th>Vers</th></tr>';tbody=sessionLines.transfer.map((r,i)=>`<tr><td>${i+1}</td><td>${h(r.date)}</td><td>${h(r.article)}</td><td>${h(r.color)}</td><td>${h(r.length)}</td><td>${h(r.width)}</td><td>${h(r.qty)}</td><td>${h(siteName(r.from))}</td><td>${h(siteName(r.to))}</td></tr>`).join('');}
-  else if(type==='inventory'){thead='<tr><th>#</th><th>Date</th><th>Article</th><th>Site</th><th>Couleur</th><th>Long.</th><th>Larg.</th><th>Ajust.</th></tr>';tbody=sessionLines.inventory.map((r,i)=>`<tr><td>${i+1}</td><td>${h(r.date)}</td><td>${h(r.article)}</td><td>${h(siteName(r.site))}</td><td>${h(r.color)}</td><td>${h(r.length)}</td><td>${h(r.width)}</td><td>${h(r.adjust>0?'+'+r.adjust:r.adjust)}</td></tr>`).join('');}
+   else if(type==='inventory'){thead='<tr><th>#</th><th>Date</th><th>Article</th><th>Site</th><th>Couleur</th><th>Long.</th><th>Larg.</th><th>Ajust.</th></tr>';tbody=sessionLines.inventory.map((r,i)=>`<tr><td>${i+1}</td><td>${h(r.date)}</td><td>${h(r.article)}</td><td>${h(siteName(r.site))}</td><td>${h(r.color)}</td><td>${h(r.length)}</td><td>${h(r.width)}</td><td>${h(r.adjust>0?'+'+r.adjust:r.adjust)}</td></tr>`).join('');}
+   else if(type==='buyback'){thead='<tr><th>#</th><th>Date</th><th>Client</th><th>Article</th><th>Couleur</th><th>Long.</th><th>Larg.</th><th>Qte</th><th>Total</th></tr>';tbody=sessionLines.buyback.map((r,i)=>`<tr><td>${i+1}</td><td>${h(r.date)}</td><td>${h(r.client)}</td><td>${h(r.article)}</td><td>${h(r.color)}</td><td>${h(r.length)}</td><td>${h(r.width)}</td><td>${h(r.qty)}</td><td>${dh(r.total)}</td></tr>`).join('');}
   $('confirm-modal-thead').innerHTML=thead;
   $('confirm-modal-tbody').innerHTML=tbody;
   confirmCallback=function(){
@@ -2006,6 +2057,9 @@ function confirmSession(type){
         return;
       }
       db.sales.push({id:uid('sale'),...r});
+    });
+    else if(type==='buyback')sessionLines.buyback.forEach(r=>{
+      db.sales.push({id:uid('sale'),...r,isBuyback:true});
     });
     else if(type==='transfer')sessionLines.transfer.forEach(r=>db.transfers.push({id:uid('tr'),...r}));
     else if(type==='inventory')sessionLines.inventory.forEach(r=>db.inventories.push({id:uid('inv'),...r}));
@@ -2153,6 +2207,18 @@ function bindMovementCalculators(){
   const transferCalc=()=>{const l=num($('t-length')?.value),w=num($('t-width')?.value),q=intv($('t-qty')?.value);if($('t-surface'))$('t-surface').textContent=sqm(surface(l,w,q))};
   ['t-article','t-color','t-length','t-width','t-qty'].forEach(id=>$(id)?.addEventListener('input',transferCalc));
   if($('t-date'))$('t-date').value=today();transferCalc();
+
+  // BUYBACK calculators
+  const buybackCalc=()=>{
+    const client=$('b-client')?.value,article=$('b-article')?.value;
+    const l=num($('b-length')?.value),w=num($('b-width')?.value),q=intv($('b-qty')?.value);
+    if(client&&article){const p=entityPrice('client',client,article);if(p&&!$('b-pm2').value)$('b-pm2').value=p}
+    if($('b-surface'))$('b-surface').textContent=sqm(surface(l,w,q));
+    if($('b-total'))$('b-total').textContent=dh(surface(l,w,q)*num($('b-pm2')?.value));
+  };
+  ['b-client','b-article'].forEach(id=>$(id)?.addEventListener('change',buybackCalc));
+  ['b-color','b-length','b-width','b-qty','b-pm2'].forEach(id=>$(id)?.addEventListener('input',buybackCalc));
+  if($('b-date'))$('b-date').value=today();buybackCalc();
 }
 function bindInvCalculators(){
   const invCalc=()=>{const l=num($('i-length')?.value),w=num($('i-width')?.value),q=intv($('i-adjust')?.value);if($('i-surface'))$('i-surface').textContent=sqm(surface(l,w,Math.abs(q)))};
@@ -2397,7 +2463,7 @@ function bindStaticEvents(){
   $('reset-app').addEventListener('click',()=>{
     if(!requireAdmin())return;
     if(confirm('Attention : supprimer TOUTES les donnees ? Cette action est irreversible.\n\nConseil : exportez une sauvegarde avant.'))
-    {CKEYS.forEach(k=>db[k]=[]);sessionLines={purchase:[],sale:[],transfer:[],inventory:[]};edit={article:-1,client:-1,supplier:-1,site:-1,cp:-1,sp:-1};initDefaults();refresh();notify('Application reinitialisee');}
+    {CKEYS.forEach(k=>db[k]=[]);sessionLines={purchase:[],sale:[],transfer:[],inventory:[],buyback:[]};edit={article:-1,client:-1,supplier:-1,site:-1,cp:-1,sp:-1};initDefaults();refresh();notify('Application reinitialisee');}
   });
 
   // KPI toggle
@@ -2468,7 +2534,7 @@ function initDefaults(){
 // Expose to global
 window.saveArticle=saveArticle;window.saveClient=saveClient;window.saveSupplier=saveSupplier;window.saveSite=saveSite;
 window.saveClientPrice=saveClientPrice;window.saveSupplierPrice=saveSupplierPrice;
-window.savePurchase=savePurchase;window.saveSale=saveSale;window.saveTransfer=saveTransfer;window.saveInventory=saveInventory;
+window.savePurchase=savePurchase;window.saveSale=saveSale;window.saveBuyback=saveBuyback;window.saveTransfer=saveTransfer;window.saveInventory=saveInventory;
 window.saveAccountPayment=saveAccountPayment;
 window.editArticle=editArticle;window.editClientRow=editClientRow;window.editSupplierRow=editSupplierRow;window.editSiteRow=editSiteRow;
 window.editClientPrice=editClientPrice;window.editSupplierPrice=editSupplierPrice;
@@ -2490,7 +2556,7 @@ function adminWrap(fn){return function(...args){if(!requireAdmin())return;return
 [
   'saveArticle','saveClient','saveSupplier','saveSite','saveClientPrice','saveSupplierPrice',
   'saveUser','deleteUser','saveSupabaseConfig','manualSyncToSupabase',
-  'savePurchase','saveSale','saveTransfer','saveInventory','saveAccountPayment',
+  'savePurchase','saveSale','saveBuyback','saveTransfer','saveInventory','saveAccountPayment',
   'editArticle','editClientRow','editSupplierRow','editSiteRow','editClientPrice','editSupplierPrice',
   'removeRow','removeSite','clearForm','clearFormMv','clearFormInv','removeSessionLine','confirmSession',
   'importExcelInventaire','confirmExcelInventaire','cancelExcelInventaire','openResetStockModal','applyResetStock','openEditLine','exportBackup',
@@ -2513,7 +2579,7 @@ function coutPm2(article,length,width){
 function coutUnitaire(article,length,width){return coutPm2(article,length,width)*surface(length,width,1);}
 
 function calcLignes(periodeJours){
-  const ventes=db.sales.filter(s=>!periodeJours||dateInPeriod(s.date,periodeJours));
+  const ventes=db.sales.filter(s=>!s.isBuyback&&(!periodeJours||dateInPeriod(s.date,periodeJours)));
   return ventes.map(s=>{
     const pmA=coutPm2(s.article,s.length,s.width);
     const coutTotal=pmA*surface(s.length,s.width,intv(s.qty));
