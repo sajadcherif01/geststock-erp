@@ -514,7 +514,7 @@ function handleTableChange(key,tableName,payload){
   else if(eventType==='UPDATE'&&newRow){
     const obj=rowToObj(tableName,newRow);
     const idx=db[key].findIndex(x=>x.id===obj.id);
-    if(idx>=0&&(!db[key][idx]._updatedAt||newRow.updated_at>db[key][idx]._updatedAt)){db[key][idx]=obj;onRemoteChange();save({remote:false});debouncedRefresh()}
+    if(idx>=0&&(!db[key][idx]._updatedAt||newRow.updated_at>=db[key][idx]._updatedAt)){db[key][idx]=obj;onRemoteChange();save({remote:false});debouncedRefresh()}
   }
   else if(eventType==='DELETE'&&oldRow){
     db[key]=db[key].filter(x=>x.id!==oldRow.id);
@@ -557,32 +557,37 @@ async function importBackupFile(file){
 }
 function openResetStockModal(){
   if(!requireAdmin())return;
-  // Populate current counts before showing
-  const counts=[
-    `Achats : <strong>${db.purchases.length}</strong> enregistrement(s)`,
-    `Ventes : <strong>${db.sales.length}</strong> enregistrement(s)`,
-    `Transferts : <strong>${db.transfers.length}</strong> enregistrement(s)`,
-    `Inventaire importe : <strong>${db.inventories.length}</strong> enregistrement(s)`,
-  ];
-  $('reset-current-counts').innerHTML=counts.join('<br>');
+  const seen=new Set();
+  const movements=[...db.purchases,...db.sales.filter(x=>!x.stockIgnore),...db.transfers,...db.inventories];
+  movements.forEach(x=>{if(x.key&&x.site){const k=x.key+'|'+x.site;seen.add(k)}});
+  const withStock=[...seen].filter(k=>{const[key,site]=k.split('|');return stockQty(key,site)!==0});
+  $('reset-current-counts').innerHTML=
+    `Articles/sites avec stock : <strong>${withStock.length}</strong> ajustement(s) à créer<br>`+
+    `Historique achats conservé : <strong>${db.purchases.length}</strong> écriture(s)<br>`+
+    `Historique ventes conservé : <strong>${db.sales.length}</strong> écriture(s)`;
   $('restore-modal').style.display='flex';
 }
 // (restauration remplacee par remise a zero stock)
 function applyResetStock(){
   if(!requireAdmin())return;
-  if(!confirm('Attention CONFIRMER la remise a zero du stock ?\n\nCeci va effacer :\n- Tous les achats (entrees stock)\n- Toutes les ventes (sorties stock)\n- Tous les transferts\n- Tout l\'inventaire importe\n\nLa base de donnees (articles, clients, fournisseurs, prix) reste intacte.\n\nCette action est irreversible.'))return;
-  // Effacer uniquement les mouvements et le stock, pas la base de donnees
-  db.purchases=[];
-  db.sales=[];
-  db.transfers=[];
-  db.inventories=[];
-  db.rolls=[];
-  db.rollCuts=[];
-  // NE PAS toucher : db.articles, db.clients, db.suppliers, db.sites, db.clientPrices, db.supplierPrices, db.payments
+  if(!confirm('Creer des ajustements de remise a zero pour tous les articles sur tous les sites ?\n\nLes mouvements existants (achats, ventes, transferts) seront conserves dans l\'historique.\nDes ajustements negatifs seront crees pour ramener le stock a zero.\n\nCette action est reversible en supprimant les ajustements dans l\'historique inventaire.'))return;
+  const adjustments=[];
+  const seen=new Set();
+  const movements=[...db.purchases,...db.sales.filter(x=>!x.stockIgnore),...db.transfers,...db.inventories];
+  const refMap={};
+  movements.forEach(x=>{if(x.key&&x.site){const k=x.key+'|'+x.site;seen.add(k);if(!refMap[k])refMap[k]=x}});
+  seen.forEach(k=>{
+    const [key,site]=k.split('|');
+    const currentStock=stockQty(key,site);
+    if(currentStock===0)return;
+    const ref=refMap[k];
+    adjustments.push({article:ref?.article||'',color:ref?.color||'',length:ref?.length||0,width:ref?.width||0,key,site,adjust:-currentStock,date:today(),note:'Remise a zero du stock',status:'OK',qty:Math.abs(currentStock)});
+  });
+  adjustments.forEach(a=>db.inventories.push({id:uid('inv'),...a}));
   $('restore-modal').style.display='none';
   save();
   refresh();
-  notify('OK Stock remis a zero - Base de donnees intacte (articles, clients, fournisseurs, prix conserves).');
+  notify(`OK ${adjustments.length} ajustement(s) de remise a zero crees. Historique conserve.`);
 }
 
 // â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬ NOTIFY â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬
@@ -1116,7 +1121,10 @@ function renderInventoryImport(){
       <p style="font-size:12px;color:var(--mut);line-height:1.8">Colonne A : Nom article<br>Colonne B : Couleur<br>Colonne C : Longueur<br>Colonne D : Largeur<br>Colonne E : Quantite</p>
       <p style="font-size:12px;color:var(--warn);margin-top:8px">Attention La ligne 1 est ignoree (en-tetes). Les donnees commencent a la ligne 2.</p>
     </div>
-    <div class="form-grid">
+    <div class="field" style="margin-bottom:8px">
+      <label class="checkbox-label"><input type="checkbox" id="xi-full-replacement" onchange="toggleReplacementMode()"> <strong>Mode remplacement complet</strong> &mdash; les quantit&eacute;s import&eacute;es deviennent le NOUVEAU stock de r&eacute;f&eacute;rence (ajustement par &eacute;cart). Les articles non pr&eacute;sents dans le fichier sont remis &agrave; z&eacute;ro.</label>
+    </div>
+    <div class="form-grid" id="xi-form-grid">
       <div class="field"><label>Date d'import</label><input id="xi-date" type="date" value="${today()}"></div>
       <div class="field"><label>Site destination</label><select id="xi-site">${opt(db.sites,'Choisir site','id','name')}</select></div>
       <div class="field full-col"><label>Motif</label><input id="xi-note" placeholder="Ex: Stock initial, Inventaire physique..." value="Import Excel inventaire"></div>
@@ -1126,9 +1134,9 @@ function renderInventoryImport(){
       <input type="file" id="excel-inv-input" accept=".xlsx" style="display:none">
     </div>
     <div id="inv-excel-preview" style="display:none;margin-top:14px">
-      <div class="section-title">AperÃƒ§u des lignes importees</div>
+      <div class="section-title">Aper&ccedil;u des lignes import&eacute;es</div>
       <div class="table-wrap">
-        <table class="table"><thead><tr><th>#</th><th>Article</th><th>Couleur</th><th>Long.</th><th>Larg.</th><th>Qte</th><th>Statut</th></tr></thead>
+        <table class="table"><thead id="inv-excel-preview-head"><tr><th>#</th><th>Article</th><th>Couleur</th><th>Long.</th><th>Larg.</th><th>Qte</th><th>Statut</th></tr></thead>
         <tbody id="inv-excel-preview-body"></tbody>
       </table>
       <div class="toolbar" style="margin-top:12px">
@@ -1156,10 +1164,21 @@ function renderInventoryImport(){
 
 // â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬ EXCEL INVENTAIRE (pas achat) â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬
 let pendingExcelInventaire=[];
+function toggleReplacementMode(){
+  const full=$('xi-full-replacement')?.checked;
+  const head=$('inv-excel-preview-head');
+  if(!head)return;
+  if(full){
+    head.innerHTML='<tr><th>#</th><th>Article</th><th>Couleur</th><th>Long.</th><th>Larg.</th><th>Stock actuel</th><th>Qte importee</th><th>Ecart</th><th>Statut</th></tr>';
+  }else{
+    head.innerHTML='<tr><th>#</th><th>Article</th><th>Couleur</th><th>Long.</th><th>Larg.</th><th>Qte</th><th>Statut</th></tr>';
+  }
+}
 function importExcelInventaire(){
   const input=$('excel-inv-input');
   const site=$('xi-site').value;
   const date=$('xi-date').value||today();
+  const fullReplacement=$('xi-full-replacement')?.checked;
   if(!site){alert('Veuillez choisir un site destination.');return;}
   const doImport=function(){
     input.onchange=async function(e){
@@ -1170,20 +1189,47 @@ function importExcelInventaire(){
         const wb=XLSX.read(bytes,{type:'array'});
         const ws=wb.Sheets[wb.SheetNames[0]];
         const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-        pendingExcelInventaire=[];const errors=[];
+        pendingExcelInventaire=[];const errors=[];const seenKeys=new Set();
         for(let i=1;i<rows.length;i++){
           const row=rows[i];
           const article=String(row[0]||'').trim();
           const color=String(row[1]||'').trim();
           const length=num(row[2]);const width=num(row[3]);const qty=intv(row[4]);
-          if(!article||!color||!length||!width||qty<=0){errors.push(i+1);continue;}
-if(!db.articles.find(a=>a.name===article))db.articles.push({id:uid('art'),name:article,type:'tapis',defaultPm2:0});
+          if(!article||!color||!length||!width){errors.push(i+1);continue;}
           const key=keyOf(article,color,length,width);
-          pendingExcelInventaire.push({article,color,length,width,qty,site,date,note:$('xi-note').value||'Import Excel',key,adjust:qty,status:'OK'});
+          if(!db.articles.find(a=>a.name===article))db.articles.push({id:uid('art'),name:article,type:'tapis',defaultPm2:0});
+          if(fullReplacement){
+            const currentStock=stockQty(key,site);
+            const diff=qty-currentStock;
+            seenKeys.add(key);
+            if(diff===0)continue;
+            pendingExcelInventaire.push({article,color,length,width,qty:diff,site,date,note:'Remplacement: '+($('xi-note').value||'Import Excel'),key,adjust:diff,status:'OK',_currentStock:currentStock,_importedQty:qty});
+          }else{
+            if(qty<=0){errors.push(i+1);continue;}
+            pendingExcelInventaire.push({article,color,length,width,qty,site,date,note:$('xi-note').value||'Import Excel',key,adjust:qty,status:'OK'});
+          }
+        }
+        // FULL REPLACEMENT MODE: zero out products with stock but not in file
+        if(fullReplacement){
+          const allSiteKeys=new Set();
+          const movements=[...db.purchases,...db.sales.filter(x=>!x.stockIgnore),...db.transfers,...db.inventories];
+          const refMap={};
+          movements.forEach(x=>{if(x.key&&x.site===site){allSiteKeys.add(x.key);if(!refMap[x.key])refMap[x.key]=x}});
+          allSiteKeys.forEach(k=>{
+            if(seenKeys.has(k))return;
+            const currentStock=stockQty(k,site);
+            if(currentStock===0)return;
+            const ref=refMap[k];
+            pendingExcelInventaire.push({article:ref?.article||'',color:ref?.color||'',length:ref?.length||0,width:ref?.width||0,qty:-currentStock,site,date,note:'Remplacement: article non present dans le fichier (remis a zero)',key:k,adjust:-currentStock,status:'Zero',_currentStock:currentStock,_importedQty:0});
+          });
         }
         const body=$('inv-excel-preview-body');
-        body.innerHTML=pendingExcelInventaire.map((r,i)=>`<tr><td>${i+1}</td><td>${r.article}</td><td>${r.color}</td><td>${r.length}</td><td>${r.width}</td><td>${r.qty}</td><td><span class="badge b-ok">Pret</span></td></tr>`).join('');
-        if(errors.length)body.innerHTML+=`<tr><td colspan="7" class="empty">Attention ${errors.length} ligne(s) ignoree(s) (lignes: ${errors.join(', ')})</td></tr>`;
+        if(fullReplacement){
+          body.innerHTML=pendingExcelInventaire.map((r,i)=>`<tr><td>${i+1}</td><td>${r.article}</td><td>${r.color}</td><td>${r.length}</td><td>${r.width}</td><td>${r._currentStock??'-'}</td><td>${r._importedQty??r.qty}</td><td><span class="badge ${r.adjust>0?'b-ok':r.adjust<0?'b-bad':'b-gray'}">${r.adjust>0?'+'+r.adjust:r.adjust}</span></td><td><span class="badge ${r.status==='Zero'?'b-warn':'b-ok'}">${r.status}</span></td></tr>`).join('');
+        }else{
+          body.innerHTML=pendingExcelInventaire.map((r,i)=>`<tr><td>${i+1}</td><td>${r.article}</td><td>${r.color}</td><td>${r.length}</td><td>${r.width}</td><td>${r.qty}</td><td><span class="badge b-ok">Pret</span></td></tr>`).join('');
+        }
+        if(errors.length)body.innerHTML+=`<tr><td colspan="9" class="empty">Attention ${errors.length} ligne(s) ignoree(s) (lignes: ${errors.join(', ')})</td></tr>`;
         $('inv-excel-preview').style.display='block';
         notify(`${pendingExcelInventaire.length} ligne(s) lues. Verifiez et confirmez.`);
       }catch(err){alert('Erreur lecture Excel: '+err.message);}
@@ -1197,7 +1243,8 @@ if(!db.articles.find(a=>a.name===article))db.articles.push({id:uid('art'),name:a
 function confirmExcelInventaire(){
   if(!pendingExcelInventaire.length)return;
   pendingExcelInventaire.forEach(r=>db.inventories.push({id:uid('inv'),...r}));
-  notify(`${pendingExcelInventaire.length} ligne(s) ajoutees a l'inventaire (stock mis a jour, pas en achat).`);
+  const count=pendingExcelInventaire.length;
+  notify(`${count} ligne(s) ajoutee(s) a l'inventaire (stock mis a jour, historique conserve).`);
   pendingExcelInventaire=[];
   $('inv-excel-preview').style.display='none';
   save();refresh();

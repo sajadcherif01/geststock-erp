@@ -270,18 +270,15 @@
 <div id="restore-modal" class="modal-overlay" style="display:none">
   <div class="modal-box" style="max-width:540px">
     <h3>Remise a zero du stock</h3>
-    <p class="modal-sub">Reinitialise le stock et l'historique des mouvements. La base de donnees (articles, clients, fournisseurs, sites, prix) reste intacte.</p>
+    <p class="modal-sub">Cree des <strong>ajustements negatifs</strong> pour ramener tous les stocks a zero. <strong>L'historique des mouvements (achats, ventes, transferts) est conserve</strong> &ndash; seuls des ajustements correctifs sont ajoutes.</p>
 
-    <!-- CE QUI SERA EFFACE -->
+    <!-- CE QUI SERA FAIT -->
     <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;margin-bottom:12px">
-      <div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:8px">Ce qui sera remis a zero :</div>
+      <div style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:8px">Ce qui sera fait :</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px" id="reset-counts-clear">
-        <div style="font-size:12px;color:#b91c1c">Stock inventaire</div>
-        <div style="font-size:12px;color:#b91c1c">Achats (entrees)</div>
-        <div style="font-size:12px;color:#b91c1c">Ventes (sorties)</div>
-        <div style="font-size:12px;color:#b91c1c">Transferts entre sites</div>
-        <div style="font-size:12px;color:#b91c1c">Importations stock</div>
-        <div style="font-size:12px;color:#b91c1c">Tout l'historique mouvements</div>
+        <div style="font-size:12px;color:#b91c1c">Ajustements negatifs crees</div>
+        <div style="font-size:12px;color:#b91c1c">Stock ramene a zero</div>
+        <div style="font-size:12px;color:#b91c1c">Tous les articles, tous les sites</div>
       </div>
     </div>
 
@@ -289,30 +286,28 @@
     <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:14px;margin-bottom:16px">
       <div style="font-size:13px;font-weight:700;color:#065f46;margin-bottom:8px">Ce qui reste intact :</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <div style="font-size:12px;color:#047857">Articles</div>
-        <div style="font-size:12px;color:#047857">Clients</div>
-        <div style="font-size:12px;color:#047857">Fournisseurs</div>
-        <div style="font-size:12px;color:#047857">Sites</div>
-        <div style="font-size:12px;color:#047857">Prix clients</div>
-        <div style="font-size:12px;color:#047857">Prix fournisseurs</div>
-        <div style="font-size:12px;color:#047857">Paiements</div>
+        <div style="font-size:12px;color:#047857">Historique des achats</div>
+        <div style="font-size:12px;color:#047857">Historique des ventes</div>
+        <div style="font-size:12px;color:#047857">Transferts entre sites</div>
+        <div style="font-size:12px;color:#047857">Importations stock precedentes</div>
+        <div style="font-size:12px;color:#047857">Comptes clients et fournisseurs</div>
         <div style="font-size:12px;color:#047857">Tous les parametres</div>
       </div>
     </div>
 
     <!-- COMPTEURS ACTUELS -->
     <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px;margin-bottom:16px">
-      <div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:8px">Donnees actuelles qui seront effacees :</div>
+      <div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:8px">Ajustements de remise a zero qui seront crees :</div>
       <div id="reset-current-counts" style="font-size:12px;color:#1e40af;line-height:2"></div>
     </div>
 
     <p style="font-size:12px;color:var(--mut);margin-bottom:14px">
-      Conseil <strong>Conseil :</strong> Exportez une sauvegarde JSON avant de proceder.
+      <strong>Conseil :</strong> Exportez une sauvegarde JSON avant de proceder.
       <button class="btn sm" onclick="exportBackup()" style="margin-left:8px">Exporter sauvegarde</button>
     </p>
 
     <div class="modal-actions">
-      <button class="btn danger" onclick="applyResetStock()">Confirmer la remise a zero du stock</button>
+      <button class="btn danger" onclick="applyResetStock()">Confirmer la remise a zero</button>
       <button class="btn" onclick="document.getElementById('restore-modal').style.display='none'">Annuler</button>
     </div>
   </div>
