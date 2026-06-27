@@ -939,12 +939,12 @@ function renderMovements(){
       <div class="form-grid tight">
         <div class="field"><label>Date</label><input id="s-date" type="date"></div>
         <div class="field"><label>Client</label><select id="s-client">${opt(db.clients,'Client')}</select></div>
-        <div class="field" id="s-article-field"><label>Article</label><select id="s-article" onchange="onSaleArticleChange()">${opt(db.articles,'Article')}</select></div>
-        <div class="field" id="s-site-field"><label>Site OUT</label><select id="s-site">${opt(db.sites,'Site','id','name')}</select></div>
-        <div class="field" id="s-color-field"><label>Couleur</label><select id="s-color"><option value="">-- Selectionner couleur --</option></select></div>
-        <div class="field" id="s-dim-field"><label>Dimensions (L x l)</label><select id="s-dim"><option value="">-- Selectionner dim. --</option></select></div>
-        <div class="field"><label>Longueur (cm)</label><input id="s-length" type="number" step="0.01" placeholder="0.00" readonly style="background:#f0f4f9"></div>
-        <div class="field"><label>Largeur (cm)</label><input id="s-width" type="number" step="0.01" placeholder="0.00" readonly style="background:#f0f4f9"></div>
+        <div class="field" id="s-article-field"><label>Article</label><input id="s-article" list="s-article-list" placeholder="Article"><datalist id="s-article-list">${db.articles.map(a=>`<option value="${attr(a.name)}">`).join('')}</datalist></div>
+        <div class="field" id="s-site-field" style="display:none"><label>Site</label><select id="s-site"><option value="">Hors stock</option></select></div>
+        <div class="field" id="s-color-field"><label>Couleur</label><input id="s-color" placeholder="Couleur"></div>
+        <div class="field" id="s-dim-field" style="display:none"><label>Dimensions</label><select id="s-dim"><option value="">Hors stock</option></select></div>
+        <div class="field"><label>Longueur (cm)</label><input id="s-length" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label>Largeur (cm)</label><input id="s-width" type="number" step="0.01" placeholder="0.00"></div>
         <div class="field"><label>Quantite</label><input id="s-qty" type="number" step="1" placeholder="0"></div>
         <div class="field"><label>Prix m2</label><input id="s-pm2" type="number" step="0.01" placeholder="0.00"></div>
         <div class="field"><label>Remarque</label><input id="s-note" placeholder="Optionnel"></div>
@@ -1883,7 +1883,7 @@ function editClientPrice(i){edit.cp=i;refresh()}
 function editSupplierPrice(i){edit.sp=i;refresh()}
 function removeRow(name,i){if(!confirm('Supprimer cet élément ?'))return;db[name].splice(i,1);save();refresh();notify('Supprimé')}
 function removeSite(i){const id=db.sites[i].id;const used=[...db.purchases,...db.sales].some(x=>x.site===id)||db.transfers.some(x=>x.from===id||x.to===id)||db.inventories.some(x=>x.site===id);if(used)return alert('Site utilise dans les operations - suppression impossible.');db.sites.splice(i,1);save();refresh()}
-function removeSessionLine(type,i){sessionLines[type].splice(i,1);if(type==='inventory')// renderInventoryImport disabled in hors-stock mode;else renderMovements();}
+function removeSessionLine(type,i){sessionLines[type].splice(i,1);renderMovements();}
 function setAccountView(type,value){view[type+'Account']=value;refresh()}
 
 // ===== EDIT DELETE =====
