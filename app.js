@@ -933,7 +933,7 @@ function renderMovements(){
 
   // SALE - vente client
   $('mv-sale').innerHTML=`
-    <div class="panel-head"><div><h2>Vente Opération de vente</h2><p>Enregistrez les ventes. Le stock est deduit automatiquement.</p></div></div>
+    <div class="panel-head"><div><h2>Vente Opération de vente</h2><p>Enregistrez les ventes comme lignes commerciales hors stock.</p></div></div>
     <div class="quick-entry">
       <h4>âš¡ Saisie rapide</h4>
       <div class="form-grid tight">
