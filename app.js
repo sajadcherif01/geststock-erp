@@ -728,6 +728,38 @@ function accountSummary(type,name){
   },0);
   return{entity,init,totalSales,totalBuybacks,totalOps,totalPay,balance:init+totalOps-totalPay,ops,payments};
 }
+function financialSituationSummary(){
+  const clientRows=db.clients.map(c=>({name:c.name,balance:num(accountSummary('client',c.name).balance)}));
+  const supplierRows=db.suppliers.map(s=>({name:s.name,balance:num(accountSummary('supplier',s.name).balance)}));
+  const clientReceivable=clientRows.filter(r=>r.balance>0).reduce((s,r)=>s+r.balance,0);
+  const clientCredit=clientRows.filter(r=>r.balance<0).reduce((s,r)=>s+Math.abs(r.balance),0);
+  const supplierPayable=supplierRows.filter(r=>r.balance>0).reduce((s,r)=>s+r.balance,0);
+  const supplierReceivable=supplierRows.filter(r=>r.balance<0).reduce((s,r)=>s+Math.abs(r.balance),0);
+  const net=clientReceivable+supplierReceivable-supplierPayable-clientCredit;
+  const topClients=clientRows.filter(r=>r.balance>0).sort((a,b)=>b.balance-a.balance).slice(0,8);
+  const topSuppliers=supplierRows.filter(r=>r.balance>0).sort((a,b)=>b.balance-a.balance).slice(0,8);
+  const supplierCredits=supplierRows.filter(r=>r.balance<0).sort((a,b)=>Math.abs(b.balance)-Math.abs(a.balance)).slice(0,8);
+  return{clientReceivable,clientCredit,supplierPayable,supplierReceivable,net,topClients,topSuppliers,supplierCredits};
+}
+function renderFinancialSituation(){
+  const s=financialSituationSummary();
+  const netColor=s.net>=0?'var(--ok)':'var(--danger)';
+  const row=(r,i,negative=false)=>`<tr><td>${i+1}</td><td>${h(r.name)}</td><td style="font-weight:700;color:${negative?'var(--danger)':'var(--ok)'}">${dh(Math.abs(r.balance))}</td></tr>`;
+  return `<div class="panel-head"><div><h2>Situation financière</h2><p>Résumé global des montants clients et fournisseurs.</p></div></div>
+    <div class="summary">
+      <div class="box"><div class="k">Clients à encaisser</div><div class="v" style="color:var(--ok)">${dh(s.clientReceivable)}</div></div>
+      <div class="box"><div class="k">Avoirs clients</div><div class="v" style="color:var(--danger)">${dh(s.clientCredit)}</div></div>
+      <div class="box"><div class="k">Fournisseurs à payer</div><div class="v" style="color:var(--danger)">${dh(s.supplierPayable)}</div></div>
+      <div class="box"><div class="k">Fournisseurs me doivent</div><div class="v" style="color:var(--ok)">${dh(s.supplierReceivable)}</div></div>
+      <div class="box"><div class="k">Écart net</div><div class="v" style="color:${netColor}">${dh(s.net)}</div></div>
+    </div>
+    <div class="section-title">Détail situation</div>
+    <div class="analytics-grid">
+      <div class="analytics-card"><h4>Top clients à encaisser</h4><div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Client</th><th>Montant</th></tr></thead><tbody>${s.topClients.map((r,i)=>row(r,i)).join('')||'<tr><td class="empty" colspan="3">Aucun montant client à encaisser</td></tr>'}</tbody></table></div></div>
+      <div class="analytics-card"><h4>Fournisseurs à payer</h4><div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Fournisseur</th><th>Montant</th></tr></thead><tbody>${s.topSuppliers.map((r,i)=>row(r,i,true)).join('')||'<tr><td class="empty" colspan="3">Aucun fournisseur à payer</td></tr>'}</tbody></table></div></div>
+      <div class="analytics-card"><h4>Fournisseurs me doivent</h4><div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Fournisseur</th><th>Montant</th></tr></thead><tbody>${s.supplierCredits.map((r,i)=>row(r,i)).join('')||'<tr><td class="empty" colspan="3">Aucun avoir fournisseur</td></tr>'}</tbody></table></div></div>
+    </div>`;
+}
 function dueState(d){if(!d)return{label:'-',cls:'b-brand'};const t=new Date(today()),x=new Date(d);t.setHours(0,0,0,0);x.setHours(0,0,0,0);const days=Math.round((x-t)/86400000);if(days<0)return{label:`Depassee (${Math.abs(days)}j)`,cls:'b-bad'};if(days===0)return{label:"Aujourd'hui",cls:'b-warn'};return{label:`${days}j`,cls:days<=7?'b-warn':'b-ok'}}
 function paymentStatus(p){
   const status=normalizedPaymentStatus(p);
