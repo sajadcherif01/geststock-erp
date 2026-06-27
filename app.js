@@ -1284,6 +1284,7 @@ function cancelExcelInventaire(){
 function renderAccounts(){
   $('acc-client').innerHTML=renderAccountPanel('client','Compte client');
   $('acc-supplier').innerHTML=renderAccountPanel('supplier','Compte fournisseur');
+  if($('acc-finance'))$('acc-finance').innerHTML=renderFinancialSituation();
   bindAccountTools();
 }
 function renderAccountPanel(type,title){
