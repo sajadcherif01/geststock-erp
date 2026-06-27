@@ -2221,6 +2221,12 @@ function bindMovementCalculators(){
   ['t-article','t-color','t-length','t-width','t-qty'].forEach(id=>$(id)?.addEventListener('input',transferCalc));
   if($('t-date'))$('t-date').value=today();transferCalc();
 
+  // Hors-stock mode keeps sale entry fully manual and prevents stock-driven UI locks.
+  window.onSaleArticleChange=function(){saleCalc();};
+  window.onSaleColorChange=function(){saleCalc();};
+  window.onSaleDimChange=function(){saleCalc();};
+  ['s-length','s-width','s-qty'].forEach(id=>{const el=$(id);if(el){el.readOnly=false;el.style.background='#fff';}});
+  ['s-site-field','s-dim-field','s-stock-dispo-box','s-roll-wrap','s-roll-hint'].forEach(id=>{const el=$(id);if(el)el.style.display='none';});
   // BUYBACK calculators
   const buybackCalc=()=>{
     const client=$('b-client')?.value,article=$('b-article')?.value;
