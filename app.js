@@ -736,28 +736,78 @@ function financialSituationSummary(){
   const supplierPayable=supplierRows.filter(r=>r.balance>0).reduce((s,r)=>s+r.balance,0);
   const supplierReceivable=supplierRows.filter(r=>r.balance<0).reduce((s,r)=>s+Math.abs(r.balance),0);
   const net=clientReceivable+supplierReceivable-supplierPayable-clientCredit;
+  const totalSales=db.sales.filter(x=>!x.isBuyback).reduce((s,x)=>s+num(x.total),0);
+  const totalBuybacks=db.sales.filter(x=>x.isBuyback).reduce((s,x)=>s+num(x.total),0);
+  const totalPurchases=db.purchases.reduce((s,x)=>s+num(x.total),0);
+  const fees=db.sales.filter(isFeeSale).reduce((s,x)=>s+num(x.total),0);
+  const simpleProfit=totalSales-totalBuybacks-totalPurchases;
+  const todayDate=new Date(today());todayDate.setHours(0,0,0,0);
+  const overdueClients=clientRows.filter(r=>r.balance>0).map(r=>{
+    const ops=db.sales.filter(x=>!x.isBuyback&&x.client===r.name&&x.date).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+    const first=ops[0]?.date||'';
+    const days=first?Math.max(0,Math.round((todayDate-new Date(first))/86400000)):0;
+    return{...r,firstDate:first,days};
+  }).sort((a,b)=>b.days-a.days||b.balance-a.balance);
+  const riskyClients=clientRows.filter(r=>r.balance>=10000).sort((a,b)=>b.balance-a.balance);
+  const upcomingDue=db.payments.filter(p=>p.due&&normalizedPaymentStatus(p)!=='paid').map(p=>{
+    const d=new Date(p.due);d.setHours(0,0,0,0);
+    const days=Math.round((d-todayDate)/86400000);
+    return{...p,days};
+  }).filter(p=>p.days<=7).sort((a,b)=>a.days-b.days).slice(0,10);
   const topClients=clientRows.filter(r=>r.balance>0).sort((a,b)=>b.balance-a.balance).slice(0,8);
   const topSuppliers=supplierRows.filter(r=>r.balance>0).sort((a,b)=>b.balance-a.balance).slice(0,8);
   const supplierCredits=supplierRows.filter(r=>r.balance<0).sort((a,b)=>Math.abs(b.balance)-Math.abs(a.balance)).slice(0,8);
-  return{clientReceivable,clientCredit,supplierPayable,supplierReceivable,net,topClients,topSuppliers,supplierCredits};
+  return{clientRows,supplierRows,clientReceivable,clientCredit,supplierPayable,supplierReceivable,net,totalSales,totalPurchases,totalBuybacks,fees,simpleProfit,overdueClients,riskyClients,upcomingDue,topClients,topSuppliers,supplierCredits};
+}
+function financialCsvEscape(v){return '"'+String(v??'').replaceAll('"','""')+'"'}
+function downloadTextFile(name,content,type='text/csv;charset=utf-8'){
+  const blob=new Blob([content],{type});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href);
+}
+function exportFinancialCSV(){
+  const s=financialSituationSummary();
+  const rows=[['Type','Nom','Montant']];
+  s.clientRows.forEach(r=>rows.push(['Client',r.name,r.balance]));
+  s.supplierRows.forEach(r=>rows.push(['Fournisseur',r.name,r.balance]));
+  rows.push(['TOTAL','Clients a encaisser',s.clientReceivable]);
+  rows.push(['TOTAL','Fournisseurs a payer',s.supplierPayable]);
+  rows.push(['TOTAL','Fournisseurs me doivent',s.supplierReceivable]);
+  rows.push(['TOTAL','Ecart net',s.net]);
+  downloadTextFile('situation_financiere_'+today()+'.csv',rows.map(r=>r.map(financialCsvEscape).join(';')).join('\n'));
+}
+function whatsappClientReminder(name){
+  const sum=accountSummary('client',name);
+  const msg=`Bonjour ${name},\nPetit rappel concernant votre solde restant: ${dh(sum.balance)}.\nMerci de nous confirmer le règlement.\nGestStock ERP`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
 }
 function renderFinancialSituation(){
   const s=financialSituationSummary();
   const netColor=s.net>=0?'var(--ok)':'var(--danger)';
   const row=(r,i,negative=false)=>`<tr><td>${i+1}</td><td>${h(r.name)}</td><td style="font-weight:700;color:${negative?'var(--danger)':'var(--ok)'}">${dh(Math.abs(r.balance))}</td></tr>`;
+  const overdueRow=(r,i)=>`<tr><td>${i+1}</td><td>${h(r.name)} ${r.balance>=10000?'<span class="badge b-bad">Risque</span>':''}</td><td>${r.days}j</td><td style="font-weight:700;color:var(--danger)">${dh(r.balance)}</td><td><button class="btn sm ok" onclick="whatsappClientReminder('${attr(r.name)}')">WhatsApp</button></td></tr>`;
+  const dueRow=(p,i)=>`<tr><td>${i+1}</td><td>${h(p.type==='client'?'Client':'Fournisseur')}</td><td>${h(p.name)}</td><td>${h(p.due)}</td><td><span class="badge ${p.days<0?'b-bad':p.days===0?'b-warn':'b-ok'}">${p.days<0?'Retard '+Math.abs(p.days)+'j':p.days===0?'Aujourd hui':p.days+'j'}</span></td><td>${dh(p.amount)}</td></tr>`;
+  const auditRows=operationAuditLog.slice(-12).reverse().map((x,i)=>`<tr><td>${i+1}</td><td>${h((x.date||'').slice(0,16).replace('T',' '))}</td><td>${h(x.user)}</td><td>${h(x.action)}</td><td>${h(x.type)}</td><td>${h(x.entity)}</td></tr>`).join('');
   return `<div class="panel-head"><div><h2>Situation financière</h2><p>Résumé global des montants clients et fournisseurs.</p></div></div>
+    <div class="toolbar"><button class="btn alt" onclick="exportFinancialCSV()">Export Excel/CSV</button><button class="btn" onclick="exportBackup()">Sauvegarde JSON</button></div>
     <div class="summary">
       <div class="box"><div class="k">Clients à encaisser</div><div class="v" style="color:var(--ok)">${dh(s.clientReceivable)}</div></div>
       <div class="box"><div class="k">Avoirs clients</div><div class="v" style="color:var(--danger)">${dh(s.clientCredit)}</div></div>
       <div class="box"><div class="k">Fournisseurs à payer</div><div class="v" style="color:var(--danger)">${dh(s.supplierPayable)}</div></div>
       <div class="box"><div class="k">Fournisseurs me doivent</div><div class="v" style="color:var(--ok)">${dh(s.supplierReceivable)}</div></div>
       <div class="box"><div class="k">Écart net</div><div class="v" style="color:${netColor}">${dh(s.net)}</div></div>
+      <div class="box"><div class="k">Bénéfice simplifié</div><div class="v" style="color:${s.simpleProfit>=0?'var(--ok)':'var(--danger)'}">${dh(s.simpleProfit)}</div></div>
+      <div class="box"><div class="k">Dernière sauvegarde</div><div class="v" style="font-size:15px">${lastRemoteUpdatedAt?lastRemoteUpdatedAt.slice(0,16).replace('T',' '):'Non synchronisée'}</div></div>
     </div>
+    <div class="section-title">Clients en retard + relance WhatsApp</div>
+    <div class="table-wrap" style="margin-bottom:14px"><table class="table"><thead><tr><th>#</th><th>Client</th><th>Ancienneté</th><th>Montant</th><th>Relance</th></tr></thead><tbody>${s.overdueClients.slice(0,10).map(overdueRow).join('')||'<tr><td class="empty" colspan="5">Aucun client en retard</td></tr>'}</tbody></table></div>
+    <div class="section-title">Échéances à venir / en retard</div>
+    <div class="table-wrap" style="margin-bottom:14px"><table class="table"><thead><tr><th>#</th><th>Type</th><th>Nom</th><th>Échéance</th><th>Statut</th><th>Montant</th></tr></thead><tbody>${s.upcomingDue.map(dueRow).join('')||'<tr><td class="empty" colspan="6">Aucune échéance urgente</td></tr>'}</tbody></table></div>
     <div class="section-title">Détail situation</div>
     <div class="analytics-grid">
       <div class="analytics-card"><h4>Top clients à encaisser</h4><div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Client</th><th>Montant</th></tr></thead><tbody>${s.topClients.map((r,i)=>row(r,i)).join('')||'<tr><td class="empty" colspan="3">Aucun montant client à encaisser</td></tr>'}</tbody></table></div></div>
       <div class="analytics-card"><h4>Fournisseurs à payer</h4><div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Fournisseur</th><th>Montant</th></tr></thead><tbody>${s.topSuppliers.map((r,i)=>row(r,i,true)).join('')||'<tr><td class="empty" colspan="3">Aucun fournisseur à payer</td></tr>'}</tbody></table></div></div>
       <div class="analytics-card"><h4>Fournisseurs me doivent</h4><div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Fournisseur</th><th>Montant</th></tr></thead><tbody>${s.supplierCredits.map((r,i)=>row(r,i)).join('')||'<tr><td class="empty" colspan="3">Aucun avoir fournisseur</td></tr>'}</tbody></table></div></div>
+      <div class="analytics-card"><h4>Journal modifications</h4><div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Date</th><th>User</th><th>Action</th><th>Type</th><th>Nom</th></tr></thead><tbody>${auditRows||'<tr><td class="empty" colspan="6">Aucun historique</td></tr>'}</tbody></table></div></div>
     </div>`;
 }
 function dueState(d){if(!d)return{label:'-',cls:'b-brand'};const t=new Date(today()),x=new Date(d);t.setHours(0,0,0,0);x.setHours(0,0,0,0);const days=Math.round((x-t)/86400000);if(days<0)return{label:`Depassee (${Math.abs(days)}j)`,cls:'b-bad'};if(days===0)return{label:"Aujourd'hui",cls:'b-warn'};return{label:`${days}j`,cls:days<=7?'b-warn':'b-ok'}}
@@ -2606,7 +2656,7 @@ window.saveSupabaseConfig=saveSupabaseConfig;window.manualSyncToSupabase=manualS
 window.restoreFromHistory=restoreFromHistory;
 window.editOperationRow=editOperationRow;window.deleteOperationRow=deleteOperationRow;
 window.editPayment=editPayment;window.deletePayment=deletePayment;window.setPaymentPaidStatus=setPaymentPaidStatus;window.togglePaymentPaid=togglePaymentPaid;
-window.promptClientFee=promptClientFee;window.createClientFee=createClientFee;
+window.promptClientFee=promptClientFee;window.createClientFee=createClientFee;window.exportFinancialCSV=exportFinancialCSV;window.whatsappClientReminder=whatsappClientReminder;
 
 function adminWrap(fn){return function(...args){if(!requireAdmin())return;return fn.apply(this,args)}}
 [
