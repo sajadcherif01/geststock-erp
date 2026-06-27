@@ -27,9 +27,9 @@
   <div class="main-tabs" id="main-tabs">
     <button class="tab-btn active" data-main="database"><span class="ico"><svg viewBox="0 0 16 16" width="16" height="16"><ellipse cx="8" cy="4" rx="5" ry="2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></span>Base donnees</button>
     <button class="tab-btn" data-main="movements"><span class="ico"><svg viewBox="0 0 16 16" width="16" height="16"><path d="M13 8A5 5 0 1 1 8 3m0-2v4h4M3 8a5 5 0 0 1 5-5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Opérations</button>
-    <button class="tab-btn" data-main="inventory-import"><span class="ico"><svg viewBox="0 0 16 16" width="16" height="16"><path d="M8 1v10M4 7l4 4 4-4M2 13h12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Import Stock</button>
+    <button class="tab-btn" style="display:none" data-main="inventory-import"><span class="ico"><svg viewBox="0 0 16 16" width="16" height="16"><path d="M8 1v10M4 7l4 4 4-4M2 13h12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Import Stock</button>
     <button class="tab-btn" data-main="accounts"><span class="ico"><svg viewBox="0 0 16 16" width="16" height="16"><rect x="1.5" y="3" width="13" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="11" cy="8.5" r="1.2" fill="currentColor"/><path d="M1.5 6h3a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-3" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></span>Comptes</button>
-    <button class="tab-btn" data-main="stock"><span class="ico"><svg viewBox="0 0 16 16" width="16" height="16"><path d="M3 4.5l5-2.5 5 2.5v7l-5 2.5-5-2.5z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M3 4.5l5 2.5m0-2.5v10M8 7l5-2.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></span>Stock</button>
+    <button class="tab-btn" style="display:none" data-main="stock"><span class="ico"><svg viewBox="0 0 16 16" width="16" height="16"><path d="M3 4.5l5-2.5 5 2.5v7l-5 2.5-5-2.5z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M3 4.5l5 2.5m0-2.5v10M8 7l5-2.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></span>Stock</button>
   </div>
   <div class="topbar-right">
     <span class="role-chip visitor" id="role-chip">Non connecte</span>
@@ -38,7 +38,7 @@
     <button class="icon-btn" id="role-login">Connexion</button>
     <button class="icon-btn" id="role-logout">Deconnexion</button>
     <button class="icon-btn" id="toggle-dashboard">KPIs</button>
-    <button class="icon-btn" id="btn-reset-stock-modal">Remise a zero stock</button>
+    <button class="icon-btn" style="display:none" id="btn-reset-stock-modal">Remise a zero stock</button>
     <button class="icon-btn danger-tab" id="reset-app">Reset</button>
   </div>
 </div>
@@ -68,9 +68,9 @@
       <button class="home-card" data-home-main="movements">
         <span class="home-icon">OP</span>
         <span class="home-title">Operations</span>
-        <span class="home-sub">Achats, ventes, transferts et historique</span>
+        <span class="home-sub">Achats, ventes et historique commercial</span>
       </button>
-      <button class="home-card" data-home-main="inventory-import">
+      <button class="home-card" style="display:none" data-home-main="inventory-import">
         <span class="home-icon">IM</span>
         <span class="home-title">Import Stock</span>
         <span class="home-sub">Inventaire manuel, Excel et ajustements</span>
@@ -80,7 +80,7 @@
         <span class="home-title">Comptes</span>
         <span class="home-sub">Clients, fournisseurs, paiements et echeances</span>
       </button>
-      <button class="home-card" data-home-main="stock">
+      <button class="home-card" style="display:none" data-home-main="stock">
         <span class="home-icon">ST</span>
         <span class="home-title">Stock</span>
         <span class="home-sub">Vue globale, sites et reapprovisionnement</span>
@@ -135,7 +135,7 @@
         <div class="side-label">Opérations</div>
         <button class="sub-btn active" data-panel="mv-purchase"><span class="ico"><svg viewBox="0 0 16 16" width="16" height="16"><path d="M2 3h2l2 7h7l1.5-4H5.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="12.5" r="1" fill="currentColor"/><circle cx="12" cy="12.5" r="1" fill="currentColor"/></svg></span>Achat fournisseur</button>
         <button class="sub-btn" data-panel="mv-sale"><span class="ico"><svg viewBox="0 0 16 16" width="16" height="16"><rect x="1" y="3.5" width="14" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><line x1="1" y1="6.5" x2="15" y2="6.5" stroke="currentColor" stroke-width="1.3"/></svg></span>Opération de vente</button>
-        <button class="sub-btn" data-panel="mv-transfer"><span class="ico"><svg viewBox="0 0 16 16" width="16" height="16"><path d="M11 3l3 3-3 3M5 13l-3-3 3-3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 6H5M2 10h9" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></span>Transfert intersite</button>
+        <button class="sub-btn" style="display:none" data-panel="mv-transfer"><span class="ico"><svg viewBox="0 0 16 16" width="16" height="16"><path d="M11 3l3 3-3 3M5 13l-3-3 3-3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 6H5M2 10h9" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></span>Transfert intersite</button>
         <button class="sub-btn" data-panel="mv-buyback"><span class="ico"><svg viewBox="0 0 16 16" width="16" height="16"><path d="M11 2l3 3-3 3M5 14l-3-3 3-3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 5H5M2 11h9" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></span>Rachat client</button>
         <button class="sub-btn" data-panel="mv-history"><span class="ico"><svg viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 4v4l3 1.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>Historique</button>
       </div>
@@ -150,7 +150,7 @@
   </section>
 
   <!-- MODULE: IMPORT STOCK (Inventaire) - separe des achats -->
-  <section class="module" id="mod-inventory-import">
+  <section class="module" id="mod-inventory-import" style="display:none">
     <aside class="side">
       <div class="side-section">
         <div class="side-label">Import / Inventaire</div>
@@ -182,7 +182,7 @@
   </section>
 
   <!-- MODULE: STOCK -->
-  <section class="module" id="mod-stock">
+  <section class="module" id="mod-stock" style="display:none">
     <aside class="side">
       <div class="side-section">
         <div class="side-label">Stock</div>

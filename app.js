@@ -933,18 +933,18 @@ function renderMovements(){
 
   // SALE - vente client
   $('mv-sale').innerHTML=`
-    <div class="panel-head"><div><h2>Vente Opération de vente</h2><p>Enregistrez les ventes. Le stock est deduit automatiquement.</p></div></div>
+    <div class="panel-head"><div><h2>Vente Opération de vente</h2><p>Enregistrez les ventes comme lignes commerciales hors stock.</p></div></div>
     <div class="quick-entry">
       <h4>âš¡ Saisie rapide</h4>
       <div class="form-grid tight">
         <div class="field"><label>Date</label><input id="s-date" type="date"></div>
         <div class="field"><label>Client</label><select id="s-client">${opt(db.clients,'Client')}</select></div>
-        <div class="field" id="s-article-field"><label>Article</label><select id="s-article" onchange="onSaleArticleChange()">${opt(db.articles,'Article')}</select></div>
-        <div class="field" id="s-site-field"><label>Site OUT</label><select id="s-site">${opt(db.sites,'Site','id','name')}</select></div>
-        <div class="field" id="s-color-field"><label>Couleur</label><select id="s-color"><option value="">-- Selectionner couleur --</option></select></div>
-        <div class="field" id="s-dim-field"><label>Dimensions (L x l)</label><select id="s-dim"><option value="">-- Selectionner dim. --</option></select></div>
-        <div class="field"><label>Longueur (cm)</label><input id="s-length" type="number" step="0.01" placeholder="0.00" readonly style="background:#f0f4f9"></div>
-        <div class="field"><label>Largeur (cm)</label><input id="s-width" type="number" step="0.01" placeholder="0.00" readonly style="background:#f0f4f9"></div>
+        <div class="field" id="s-article-field"><label>Article</label><input id="s-article" list="s-article-list" placeholder="Article"><datalist id="s-article-list">${db.articles.map(a=>`<option value="${attr(a.name)}">`).join('')}</datalist></div>
+        <div class="field" id="s-site-field" style="display:none"><label>Site</label><select id="s-site"><option value="">Hors stock</option></select></div>
+        <div class="field" id="s-color-field"><label>Couleur</label><input id="s-color" placeholder="Couleur"></div>
+        <div class="field" id="s-dim-field" style="display:none"><label>Dimensions</label><select id="s-dim"><option value="">Hors stock</option></select></div>
+        <div class="field"><label>Longueur (cm)</label><input id="s-length" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label>Largeur (cm)</label><input id="s-width" type="number" step="0.01" placeholder="0.00"></div>
         <div class="field"><label>Quantite</label><input id="s-qty" type="number" step="1" placeholder="0"></div>
         <div class="field"><label>Prix m2</label><input id="s-pm2" type="number" step="0.01" placeholder="0.00"></div>
         <div class="field"><label>Remarque</label><input id="s-note" placeholder="Optionnel"></div>
@@ -953,15 +953,11 @@ function renderMovements(){
     <div class="summary">
       <div class="box"><div class="k">Surface</div><div class="v" id="s-surface">0.00 m2</div></div>
       <div class="box"><div class="k">Total</div><div class="v" id="s-total-box">0.00 DH</div></div>
-      <div class="box" id="s-stock-dispo-box"><div class="k">Stock dispo (site)</div><div class="v" id="s-stock-dispo" style="color:var(--ok)">-</div></div>
+      <div class="box" id="s-stock-dispo-box" style="display:none"><div class="k">Stock dispo (site)</div><div class="v" id="s-stock-dispo" style="color:var(--ok)">-</div></div>
     </div>
     <div class="toolbar">
       <button class="btn primary" onclick="saveSale()">+ Ajouter ligne</button>
       <button class="btn" onclick="clearFormMv('sale')">Annuler</button>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-left:8px;padding:8px 12px;background:#fff7ed;border:1px solid #fdba74;border-radius:8px;font-size:13px;font-weight:600;color:#9a3412">
-        <input type="checkbox" id="s-hors-stock" style="width:16px;height:16px;cursor:pointer;accent-color:#dc2626" onchange="onHorsStockChange()">
-        Attention Article hors stock (operation libre)
-      </label>
     </div>
     ${renderSessionTable('sale',['#','Date','Client','Article','Couleur','Long.','Larg.','Qte','Prix m2','Total','Statut',''],
       sessionLines.sale.map((r,i)=>`<tr>
@@ -1051,8 +1047,6 @@ function renderMovements(){
         <td>${h(r.article)}</td><td>${h(r.color||'-')}</td><td>${r.length&&r.width?h(r.length+' x '+r.width):'-'}</td>
         <td>${h(r.site)}</td><td>${h(r.partner)}</td><td>${h(r.qty)}</td><td>${r.total?dh(r.total):'-'}</td><td>${h(r.note)}</td></tr>`).join(''):`<tr><td class="empty" colspan="11">Aucun mouvement</td></tr>`}</tbody>
     </table></div>`;
-
-  ensureMoquetteMovementFields();
   bindMovementCalculators();
 }
 
@@ -1722,61 +1716,20 @@ function savePurchase(){
   notify('Ligne ajoutee - cliquez Confirmer pour enregistrer');
 }
 function saveSale(){
-  const horsStockChecked=$('s-hors-stock')?.checked||false;
-  const client=$('s-client').value,article=$('s-article').value,site=horsStockChecked?'':($('s-site')?.value||''),
-    color=norm($('s-color').value),length=num($('s-length').value),width=num($('s-width').value),
-    qty=intv($('s-qty').value),pm2=num($('s-pm2').value),date=$('s-date').value,note=norm($('s-note').value);
-  if(!horsStockChecked&&(!client||!article||!site||!date||!color||!length||!width||qty<=0||pm2<=0))return alert('Champs vente incomplets');
-  if(isMoquetteArticle(article)){
-    const rollId=$('s-roll')?.value;
-    const roll=getRollById(rollId);
-    if(!roll)return alert('Choisissez le rouleau a couper.');
-    const available=Math.max(0,num(roll.currentLength)-pendingRollUsage(roll.id));
-    if(length>available)return alert(`Longueur insuffisante sur ce rouleau. Disponible: ${available} cm`);
-    const total=surface(length,width,1)*pm2;
-    sessionLines.sale.push({
-      client,article,site,color,length,width,qty:1,pm2,date,note,
-      key:keyOf(article,color,length,width),total,
-      moquetteSale:true,stockIgnore:true,rollId:roll.id,rollCode:roll.code,
-      sourceLength:available,remainingLength:available-length,sourceKey:keyOf(article,color,available,width)
-    });
-    const saved={client,article,site,color,width,pm2,date,note};
-    renderMovements();
-    Object.entries(saved).forEach(([k,v])=>{const el=$(`s-${k}`);if(el)el.value=v});
-    if($('s-roll'))$('s-roll').value=roll.id;
-    $('s-qty').value='1';$('s-length').value='';
-    if(window.onSaleRollChange)window.onSaleRollChange();
-    notify('Coupe moquette ajoutee - cliquez Confirmer pour enregistrer');
-    return;
-  }
-  const horsStock=horsStockChecked;
-  if(horsStock){
-    // Mode libre: pas de site, pas de stock check, article/couleur/long/larg en texte libre
-    if(!client||!article||!date||!color||!length||!width||qty<=0||pm2<=0)return alert('Champs vente incomplets (Client, Article, Couleur, Long., Larg., Qte, Prix m2 requis)');
-    const key=keyOf(article,color,length,width);
-    const total=surface(length,width,qty)*pm2;
-    const feeNames=['transport','frais transport','frais couture','couture','surgi','surgi moquette','emballage'];
-    const isFee=feeNames.includes(article.toLowerCase());
-    sessionLines.sale.push({client,article,site:'',color,length,width,qty,pm2,date,note,key,total,stockIgnore:true,horsStock:true,isFee,feeType:isFee?article:''});
-    renderMovements();
-    // Restore hors-stock checkbox and free fields state after re-render
-    if($('s-hors-stock')){$('s-hors-stock').checked=true;window.onHorsStockChange();}
-    const saved={client,color,length,width,pm2,date,note};
-    Object.entries(saved).forEach(([k,v])=>{const el=$(`s-${k}`);if(el)el.value=v});
-    if($('s-article'))$('s-article').value=article;
-    $('s-qty').value='';
-    notify('Ligne hors stock ajoutee - cliquez Confirmer pour enregistrer');
-    return;
-  }
+  const client=$('s-client').value,article=norm($('s-article')?.value),
+    color=norm($('s-color')?.value),length=num($('s-length')?.value),width=num($('s-width')?.value),
+    qty=intv($('s-qty')?.value),pm2=num($('s-pm2')?.value),date=$('s-date').value,note=norm($('s-note')?.value);
+  if(!client||!article||!date||!color||!length||!width||qty<=0||pm2<=0)return alert('Champs vente incomplets (Client, Article, Couleur, Long., Larg., Qte, Prix m2 requis)');
   const key=keyOf(article,color,length,width);
-  if(stockQty(key,site)<qty)return alert(`Stock insuffisant sur ce site. Disponible: ${stockQty(key,site)}\n\nSi cet article est hors stock, cochez la case "Article hors stock" pour enregistrer sans affecter le stock.`);
   const total=surface(length,width,qty)*pm2;
-  sessionLines.sale.push({client,article,site,color,length,width,qty,pm2,date,note,key,total,stockIgnore:false,horsStock:false});
-  const saved={client,article,site,color,length,width,pm2,date,note};
+  const feeNames=['transport','frais transport','frais couture','couture','surgi','surgi moquette','emballage'];
+  const isFee=feeNames.includes(article.toLowerCase());
+  sessionLines.sale.push({client,article,site:'',color,length,width,qty,pm2,date,note,key,total,stockIgnore:true,horsStock:true,isFee,feeType:isFee?article:''});
+  const saved={client,article,color,length,width,pm2,date,note};
   renderMovements();
   Object.entries(saved).forEach(([k,v])=>{const el=$(`s-${k}`);if(el)el.value=v});
   $('s-qty').value='';
-  notify('Ligne ajoutee - cliquez Confirmer pour enregistrer');
+  notify('Ligne commerciale ajoutee - cliquez Confirmer pour enregistrer');
 }
 function saveBuyback(){
   const client=$('b-client').value,article=$('b-article').value,site=$('b-site').value,
@@ -1876,7 +1829,7 @@ function saveInventory(){
   const key=keyOf(article,color,length,width);
   sessionLines.inventory.push({article,site,color,length,width,adjust,date,note,key});
   const saved={article,site,color,length,width,date,note};
-  renderInventoryImport();
+  // renderInventoryImport disabled in hors-stock mode;
   Object.entries(saved).forEach(([k,v])=>{const el=$(`i-${k}`);if(el)el.value=v});
   $('i-adjust').value='';
   notify('Ajustement ajoute - cliquez Confirmer pour enregistrer');
@@ -1930,7 +1883,7 @@ function editClientPrice(i){edit.cp=i;refresh()}
 function editSupplierPrice(i){edit.sp=i;refresh()}
 function removeRow(name,i){if(!confirm('Supprimer cet élément ?'))return;db[name].splice(i,1);save();refresh();notify('Supprimé')}
 function removeSite(i){const id=db.sites[i].id;const used=[...db.purchases,...db.sales].some(x=>x.site===id)||db.transfers.some(x=>x.from===id||x.to===id)||db.inventories.some(x=>x.site===id);if(used)return alert('Site utilise dans les operations - suppression impossible.');db.sites.splice(i,1);save();refresh()}
-function removeSessionLine(type,i){sessionLines[type].splice(i,1);if(type==='inventory')renderInventoryImport();else renderMovements();}
+function removeSessionLine(type,i){sessionLines[type].splice(i,1);renderMovements();}
 function setAccountView(type,value){view[type+'Account']=value;refresh()}
 
 // ===== EDIT DELETE =====
@@ -2268,6 +2221,12 @@ function bindMovementCalculators(){
   ['t-article','t-color','t-length','t-width','t-qty'].forEach(id=>$(id)?.addEventListener('input',transferCalc));
   if($('t-date'))$('t-date').value=today();transferCalc();
 
+  // Hors-stock mode keeps sale entry fully manual and prevents stock-driven UI locks.
+  window.onSaleArticleChange=function(){saleCalc();};
+  window.onSaleColorChange=function(){saleCalc();};
+  window.onSaleDimChange=function(){saleCalc();};
+  ['s-length','s-width','s-qty'].forEach(id=>{const el=$(id);if(el){el.readOnly=false;el.style.background='#fff';}});
+  ['s-site-field','s-dim-field','s-stock-dispo-box','s-roll-wrap','s-roll-hint'].forEach(id=>{const el=$(id);if(el)el.style.display='none';});
   // BUYBACK calculators
   const buybackCalc=()=>{
     const client=$('b-client')?.value,article=$('b-article')?.value;
@@ -2453,11 +2412,11 @@ function refresh(){
   normalizePayments();
   renderDatabase();
   renderMovements();
-  renderInventoryImport();
+  // renderInventoryImport disabled in hors-stock mode;
   renderAccounts();
   enhanceFeeAndAuditUI();
   enhanceOperationTables();
-  renderStock();
+  // renderStock disabled in hors-stock mode;
   // Analyse module removed from UI.
   // renderBenefice removed - module supprimé
   updateMetrics();
@@ -2542,7 +2501,7 @@ function bindStaticEvents(){
   });
 
   // Restore modal
-  $('btn-reset-stock-modal').addEventListener('click',()=>{openResetStockModal();});
+  $('btn-reset-stock-modal')?.addEventListener('click',()=>{openResetStockModal();});
 
   // Roles
   $('role-login')?.addEventListener('click',()=>{
