@@ -367,5 +367,61 @@
 </div>
 
 <script src="app.js"></script>
+
+<style id="geststock-table-tools-style">
+  .table-search-bar{display:flex;justify-content:flex-end;margin:0 0 10px;}
+  .table-search-bar input{width:min(100%,320px);padding:9px 12px;border:1px solid #d9dee8;border-radius:8px;background:#fff;font:inherit;}
+</style>
+<script id="geststock-table-tools">
+(function(){
+  function parseDateValue(value){
+    var v=String(value || '').trim();
+    if(!v) return 0;
+    var iso=v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(iso) return new Date(Number(iso[1]), Number(iso[2])-1, Number(iso[3])).getTime();
+    var fr=v.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+    if(fr){
+      var year=Number(fr[3].length===2 ? '20' + fr[3] : fr[3]);
+      return new Date(year, Number(fr[2])-1, Number(fr[1])).getTime();
+    }
+    var parsed=Date.parse(v);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  function enhanceTables(){
+    document.querySelectorAll('.table-wrap table.table').forEach(function(table){
+      var tbody=table.tBodies && table.tBodies[0];
+      if(!tbody) return;
+      var headers=Array.from(table.querySelectorAll('thead th')).map(function(th){ return th.textContent.trim().toLowerCase(); });
+      var dateIndex=headers.findIndex(function(label){ return label.includes('date') || label.includes('jour') || label.includes('echeance') || label.includes('échéance'); });
+      if(dateIndex>=0 && table.dataset.dateSorted!=='1'){
+        Array.from(tbody.rows).sort(function(a,b){ return parseDateValue(b.cells[dateIndex] && b.cells[dateIndex].textContent)-parseDateValue(a.cells[dateIndex] && a.cells[dateIndex].textContent); }).forEach(function(row){ tbody.appendChild(row); });
+        table.dataset.dateSorted='1';
+      }
+      var wrap=table.closest('.table-wrap');
+      if(!wrap || wrap.querySelector(':scope > .table-search-bar')) return;
+      var bar=document.createElement('div');
+      bar.className='table-search-bar';
+      var input=document.createElement('input');
+      input.type='search';
+      input.placeholder='Rechercher dans ce tableau...';
+      input.setAttribute('aria-label','Rechercher dans ce tableau');
+      input.addEventListener('input',function(){
+        var query=input.value.trim().toLowerCase();
+        Array.from(tbody.rows).forEach(function(row){ row.style.display=!query || row.textContent.toLowerCase().includes(query) ? '' : 'none'; });
+      });
+      bar.appendChild(input);
+      wrap.insertBefore(bar, table);
+    });
+  }
+  var scheduled=false;
+  function scheduleEnhance(){
+    if(scheduled) return;
+    scheduled=true;
+    requestAnimationFrame(function(){ scheduled=false; enhanceTables(); });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', scheduleEnhance); else scheduleEnhance();
+  new MutationObserver(scheduleEnhance).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
 </body>
 </html>
