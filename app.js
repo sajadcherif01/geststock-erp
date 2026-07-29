@@ -2345,6 +2345,15 @@ function togglePrintOptions(type){
   const el=document.getElementById(type+'-print-options');
   if(el)el.style.display=el.style.display==='none'?'block':'none';
 }
+function accountReportDateValue(row){
+  const value=String(row?.date||'').trim();
+  if(!value)return 0;
+  const parsed=Date.parse(value);
+  return Number.isNaN(parsed)?0:parsed;
+}
+function sortAccountReportRowsByDate(rows){
+  return rows.slice().sort((a,b)=>accountReportDateValue(b)-accountReportDateValue(a));
+}
 function buildAccountReportHTML(type){
   const name=view[type+'Account'];
   if(!name)return '';
@@ -2353,8 +2362,8 @@ function buildAccountReportHTML(type){
   const fromVal=$(type+'-print-from')?.value||'';
   const toVal=$(type+'-print-to')?.value||'';
   const hidePm2=$(type+'-print-hide-pm2')?.checked||false;
-  const filteredOps=sum.ops.filter(x=>{if(!x.date)return true;if(fromVal&&x.date<fromVal)return false;if(toVal&&x.date>toVal)return false;return true});
-  const filteredPay=sum.payments.filter(p=>{if(!p.date)return true;if(fromVal&&p.date<fromVal)return false;if(toVal&&p.date>toVal)return false;return true});
+  const filteredOps=sortAccountReportRowsByDate(sum.ops.filter(x=>{if(!x.date)return true;if(fromVal&&x.date<fromVal)return false;if(toVal&&x.date>toVal)return false;return true}));
+  const filteredPay=sortAccountReportRowsByDate(sum.payments.filter(p=>{if(!p.date)return true;if(fromVal&&p.date<fromVal)return false;if(toVal&&p.date>toVal)return false;return true}));
   const totalSalesFiltered=filteredOps.reduce((s,x)=>x.isBuyback?s:s+num(x.total),0);
   const totalBuybacksFiltered=filteredOps.reduce((s,x)=>x.isBuyback?s+num(x.total):s,0);
   const totalOpsFiltered=totalSalesFiltered-totalBuybacksFiltered;
