@@ -180,7 +180,7 @@ function applyAccessMode(){
   const login=$('role-login'),logout=$('role-logout');
   if(login)login.style.display=currentUser?'none':'inline-flex';
   if(logout)logout.style.display=currentUser?'inline-flex':'none';
-  const writeNames=['saveArticle','saveClient','saveSupplier','saveSite','saveClientPrice','saveSupplierPrice','saveUser','deleteUser','savePurchase','saveSale','saveBuyback','saveTransfer','saveInventory','saveAccountPayment','confirmSession','removeRow','removeSite','removeSessionLine','openEditLine','editOperationRow','deleteOperationRow','editPayment','deletePayment','setPaymentPaidStatus','togglePaymentPaid','restoreFromHistory','promptClientFee','createClientFee','editArticle','editClientRow','editSupplierRow','editSiteRow','editClientPrice','editSupplierPrice','clearForm','clearFormMv','clearFormInv','importExcelInventaire','confirmExcelInventaire','cancelExcelInventaire','applyResetStock','exportBackup','saveSupabaseConfig','manualSyncToSupabase','loadFromSupabase'];
+  const writeNames=['saveArticle','saveClient','saveSupplier','saveSite','saveClientPrice','saveSupplierPrice','saveUser','deleteUser','savePurchase','saveSale','saveBuyback','saveTransfer','saveInventory','saveAccountPayment','confirmSession','removeRow','removeSite','removeSessionLine','openEditLine','editOperationRow','deleteOperationRow','editPayment','deletePayment','setPaymentPaidStatus','togglePaymentPaid','restoreFromHistory','promptClientFee','createClientFee','promptClientDiscount','createClientDiscount','editArticle','editClientRow','editSupplierRow','editSiteRow','editClientPrice','editSupplierPrice','clearForm','clearFormMv','clearFormInv','importExcelInventaire','confirmExcelInventaire','cancelExcelInventaire','applyResetStock','exportBackup','saveSupabaseConfig','manualSyncToSupabase','loadFromSupabase'];
   document.querySelectorAll('button').forEach(btn=>{
     const onclick=btn.getAttribute('onclick')||'';
     const id=btn.id||'';
@@ -641,7 +641,8 @@ function normalizePayments(){
 function isPaymentDeductible(p){return normalizedPaymentStatus(p)==='paid'}
 // ===== CLIENT FEES + AUDIT =====
 function isFeeSale(x){return x?.isFee||x?.horsStock&&['Transport','Frais transport','Frais couture','Surgi moquette','Couture','Surgi'].includes(x.article)}
-function operationKind(x){return x.isBuyback?'Rachat':isFeeSale(x)?(x.feeType||x.article||'Frais'):'Marchandise'}
+function isClientDiscountSale(x){return x?.horsStock&&String(x.article||'').toLowerCase()==='remise'&&num(x.total)<0}
+function operationKind(x){return x.isBuyback?'Rachat':isClientDiscountSale(x)?'Remise':isFeeSale(x)?(x.feeType||x.article||'Frais'):'Marchandise'}
 function saveAuditLog(){
   try{localStorage.setItem('gs3_operation_audit',JSON.stringify(operationAuditLog.slice(-80)))}catch(e){}
 }
@@ -681,6 +682,29 @@ function promptClientFee(clientName){
   const note=prompt('Remarque', type)||type;
   createClientFee(client,type,amount,date,note);
 }
+function createClientDiscount(client,amount,date,note){
+  const total=num(amount);
+  if(!client||total<=0)return false;
+  db.sales.push({
+    id:uid('sale'),client,article:'Remise',color:'Service',site:'',length:100,width:100,qty:1,pm2:-total,
+    date:date||today(),note:note||'Remise client',key:keyOf('Remise','Service',100,100),total:-total,
+    stockIgnore:true,horsStock:true,feeType:'Remise'
+  });
+  auditOperation('create_discount','sale',null,db.sales[db.sales.length-1]);
+  save();refresh();notify('Remise client ajoutee');
+  return true;
+}
+function promptClientDiscount(clientName){
+  if(!requireAdmin())return;
+  const client=clientName||view.clientAccount;
+  if(!client)return alert('Choisissez un client.');
+  const amount=num(prompt('Montant de la remise', '0'));
+  if(amount<=0)return alert('Montant invalide');
+  const date=prompt('Date', today());
+  if(date===null)return;
+  const note=prompt('Remarque', 'Remise client')||'Remise client';
+  createClientDiscount(client,amount,date,note);
+}
 function enhanceFeeAndAuditUI(){
   const saleToolbar=$('mv-sale')?.querySelector('.toolbar');
   if(saleToolbar&&!$('btn-sale-client-fee'))saleToolbar.insertAdjacentHTML('beforeend','<button class="btn ok" id="btn-sale-client-fee" onclick="promptClientFee()">Ajouter frais client</button>');
@@ -688,10 +712,13 @@ function enhanceFeeAndAuditUI(){
   if(clientPanel){
     const toolbar=clientPanel.querySelector('.toolbar');
     if(toolbar&&!$('btn-account-client-fee'))toolbar.insertAdjacentHTML('afterbegin',`<button class="btn ok" id="btn-account-client-fee" onclick="promptClientFee('${view.clientAccount||''}')">Créer frais client</button>`);
+    if(toolbar&&!$('btn-account-client-discount'))toolbar.insertAdjacentHTML('afterbegin',`<button class="btn warn" id="btn-account-client-discount" onclick="promptClientDiscount('${view.clientAccount||''}')">Créer remise client</button>`);
     const sum=accountSummary('client',view.clientAccount);
     const feeTotal=sum.ops.filter(isFeeSale).reduce((s,x)=>s+num(x.total),0);
+    const discountTotal=Math.abs(sum.ops.filter(isClientDiscountSale).reduce((s,x)=>s+num(x.total),0));
     const summary=clientPanel.querySelector('.summary');
     if(summary&&!$('client-fee-total-box'))summary.insertAdjacentHTML('beforeend',`<div class="box" id="client-fee-total-box"><div class="k">Dont frais</div><div class="v">${dh(feeTotal)}</div></div>`);
+    if(summary&&!$('client-discount-total-box'))summary.insertAdjacentHTML('beforeend',`<div class="box" id="client-discount-total-box"><div class="k">Remises</div><div class="v" style="color:var(--danger)">-${dh(discountTotal)}</div></div>`);
     const opTable=clientPanel.querySelectorAll('table')[0];
     if(opTable&&!opTable.dataset.feeTypeColumn){
       opTable.dataset.feeTypeColumn='1';
@@ -699,7 +726,7 @@ function enhanceFeeAndAuditUI(){
       opTable.querySelectorAll('tbody tr').forEach((tr,i)=>{
         if(tr.querySelector('.empty')){tr.querySelector('.empty').colSpan=(parseInt(tr.querySelector('.empty').colSpan)||10)+1;return;}
         const row=sum.ops[i];
-        tr.children[1]?.insertAdjacentHTML('afterend',`<td><span class="badge ${row.isBuyback?'b-bad':isFeeSale(row)?'b-warn':'b-ok'}">${operationKind(row)}</span></td>`);
+        tr.children[1]?.insertAdjacentHTML('afterend',`<td><span class="badge ${row.isBuyback||isClientDiscountSale(row)?'b-bad':isFeeSale(row)?'b-warn':'b-ok'}">${operationKind(row)}</span></td>`);
       });
     }
     const auditRows=operationAuditLog.filter(x=>!view.clientAccount||x.entity===view.clientAccount).slice(-12).reverse().map((x,i)=>`<tr><td>${i+1}</td><td>${x.date.slice(0,16).replace('T',' ')}</td><td>${x.user}</td><td>${x.action}</td><td>${x.type}</td></tr>`).join('');
@@ -1343,7 +1370,7 @@ function renderAccountPanel(type,title){
   view[type+'Account']=selected;
   const sum=accountSummary(type,selected);
   const payRows=sum.payments.map((p,i)=>{const due=dueState(p.due);return`<tr><td>${i+1}</td><td>${p.date}</td><td>${dh(p.amount)}</td><td>${p.mode}</td><td>${p.due||'-'}</td><td><span class="badge ${due.cls}">${due.label}</span></td><td><span class="badge ${paymentStatus(p)==='Impaye'?'b-bad':paymentStatus(p)==='DÃƒ'?'b-warn':'b-ok'}">${paymentStatus(p)}</span></td><td>${p.note||'-'}</td></tr>`}).join('');
-  const opRows=sum.ops.map((x,i)=>`<tr><td>${i+1}</td><td>${x.date}</td><td>${x.article}</td><td>${x.color||'-'}</td><td>${x.length||0} x ${x.width||0}</td><td>${siteName(x.site)}</td><td>${x.qty}</td><td>${sqm(surface(x.length,x.width,x.qty))}</td><td>${dh(x.pm2)}</td><td style="color:${x.isBuyback?'var(--danger)':'inherit'}">${x.isBuyback?'-'+dh(x.total):dh(x.total)}</td></tr>`).join('');
+  const opRows=sum.ops.map((x,i)=>`<tr><td>${i+1}</td><td>${x.date}</td><td>${x.article}</td><td>${x.color||'-'}</td><td>${x.length||0} x ${x.width||0}</td><td>${siteName(x.site)}</td><td>${x.qty}</td><td>${sqm(surface(x.length,x.width,x.qty))}</td><td>${dh(x.pm2)}</td><td style="color:${x.isBuyback||isClientDiscountSale(x)?'var(--danger)':'inherit'}">${x.isBuyback?'-'+dh(x.total):dh(x.total)}</td></tr>`).join('');
   const selectHtml=`<option value="">Sélectionner</option>`+list.map(x=>`<option value="${x.name}" ${x.name===selected?'selected':''}>${x.name}</option>`).join('');
   return `<div class="panel-head"><div><h2>${title}</h2><p>Solde = initial + operations âË†' paiements.</p></div></div>
     <div class="form-grid">
@@ -2665,7 +2692,7 @@ window.saveSupabaseConfig=saveSupabaseConfig;window.manualSyncToSupabase=manualS
 window.restoreFromHistory=restoreFromHistory;
 window.editOperationRow=editOperationRow;window.deleteOperationRow=deleteOperationRow;
 window.editPayment=editPayment;window.deletePayment=deletePayment;window.setPaymentPaidStatus=setPaymentPaidStatus;window.togglePaymentPaid=togglePaymentPaid;
-window.promptClientFee=promptClientFee;window.createClientFee=createClientFee;window.exportFinancialCSV=exportFinancialCSV;window.whatsappClientReminder=whatsappClientReminder;
+window.promptClientFee=promptClientFee;window.createClientFee=createClientFee;window.promptClientDiscount=promptClientDiscount;window.createClientDiscount=createClientDiscount;window.exportFinancialCSV=exportFinancialCSV;window.whatsappClientReminder=whatsappClientReminder;
 
 function adminWrap(fn){return function(...args){if(!requireAdmin())return;return fn.apply(this,args)}}
 [
