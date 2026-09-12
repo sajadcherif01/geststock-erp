@@ -898,3 +898,95 @@ input[readonly]{
   .sub-btn.active{background:#f1e7ce;border-bottom-color:var(--gold)}
   .card,.table-wrap,.modal-box{border-radius:var(--radius)}
 }
+
+
+/* ===== GESTSTOCK PRINT THEME - STYLE ONLY ===== */
+@media print{
+  @page{margin:10mm}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-shadow:none!important;text-shadow:none!important}
+  body{
+    background:#fffdf7!important;
+    color:#1e2a26!important;
+    font-family:'Cambria','Georgia','Times New Roman',serif!important;
+    font-size:11.5px!important;
+    line-height:1.4!important;
+  }
+  body::before,.topbar,.side,.home-view,.modal-overlay,.modal-backdrop,.toast,.notif,.readonly-banner,.table-search-bar{display:none!important}
+  .shell{max-width:none!important;margin:0!important;padding:0!important}
+  .module,.module.active,.panel,.panel.active{display:block!important;animation:none!important}
+  .card,.panel,.table-wrap,.summary,.kpi-row{
+    background:#fffdf7!important;
+    border:1px solid #cbc4a8!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    break-inside:avoid;
+  }
+  .panel-head{
+    border-bottom:2px solid #a9782f!important;
+    padding-bottom:8px!important;
+    margin-bottom:12px!important;
+  }
+  .panel-head h2,h1,h2,h3,h4{
+    color:#1e2a26!important;
+    font-family:'Cambria','Georgia','Times New Roman',serif!important;
+  }
+  .panel-head p,.field label,.kpi .k,.box .k{color:#59665e!important}
+  .toolbar,.panel-actions,.form-grid,.quick-entry,.quick-grid,button,input,select,textarea{display:none!important}
+  .kpi-row,.summary{
+    display:grid!important;
+    grid-template-columns:repeat(4,1fr)!important;
+    gap:0!important;
+    border:1px solid #cbc4a8!important;
+  }
+  .kpi,.box{
+    border:1px solid #cbc4a8!important;
+    background:#f8f6ec!important;
+    border-radius:0!important;
+    padding:9px!important;
+    break-inside:avoid;
+  }
+  .kpi .v,.box .v{
+    color:#1e2a26!important;
+    font-family:'Cambria','Georgia','Times New Roman',serif!important;
+    font-size:16px!important;
+  }
+  .table-wrap{overflow:visible!important}
+  table,.table{
+    width:100%!important;
+    border-collapse:collapse!important;
+    min-width:0!important;
+    white-space:normal!important;
+    font-size:10.5px!important;
+    page-break-inside:auto;
+  }
+  thead{display:table-header-group}
+  tfoot{display:table-row-group}
+  tr{page-break-inside:avoid;page-break-after:auto}
+  .table th,th{
+    background:#1e2a26!important;
+    color:#fffdf7!important;
+    border:1px solid #1e2a26!important;
+    padding:5px 6px!important;
+    font-size:8.8px!important;
+    letter-spacing:.03em!important;
+  }
+  .table td,td{
+    background:#fffdf7!important;
+    color:#1e2a26!important;
+    border:1px solid #d8d1b8!important;
+    padding:5px 6px!important;
+    font-size:10px!important;
+  }
+  .table tr:nth-child(even) td,tr:nth-child(even) td{background:#fbf9ef!important}
+  .badge{
+    border:1px solid #cbc4a8!important;
+    background:#f1eee0!important;
+    color:#1e2a26!important;
+    border-radius:2px!important;
+    padding:1px 5px!important;
+  }
+  .b-ok{background:#e4ebe1!important;color:#38513b!important}
+  .b-warn{background:#f1e7ce!important;color:#8a6224!important}
+  .b-bad{background:#f3e4e0!important;color:#96332b!important}
+  .b-purple{background:#e6e2f0!important;color:#5b4b8a!important}
+}
