@@ -2404,23 +2404,26 @@ function buildAccountReportHTML(type){
   const timeStr=new Date().toLocaleTimeString('fr-MA');
   return {init:dh(sum.init),balance:dh(sum.balance),html:`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${name} - ${periodLabel}</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;padding:24px;color:#111;font-size:13px}
-.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #1a56db}
-.header-left h1{font-size:20px;font-weight:700;color:#1a56db;margin-bottom:2px}.header-left p{font-size:12px;color:#6b7280}
-.header-right{text-align:right;font-size:11px;color:#6b7280;line-height:1.7}
-.period-badge{display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;margin-top:4px}
-.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
-.card{border:1px solid #e5e7eb;padding:12px;border-radius:10px;background:#f9fafb}
-.card.green{border-color:#6ee7b7;background:#ecfdf5}.card.red{border-color:#fca5a5;background:#fef2f2}
-.k{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;font-weight:600}.v{font-size:20px;font-weight:700;margin-top:5px}
-h2{font-size:14px;font-weight:700;margin:20px 0 8px;display:flex;align-items:center;gap:8px}
-h2 span{font-size:11px;font-weight:400;color:#6b7280}
-table{width:100%;border-collapse:collapse;margin-top:6px}
-th{background:#f8fafc;padding:8px 10px;text-align:left;border:1px solid #e5e7eb;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280}
-td{border:1px solid #e5e7eb;padding:7px 10px;font-size:12px;vertical-align:middle}
-tfoot td{background:#f0fdf4;font-weight:700}tr:nth-child(even) td{background:#fafafa}
-.footer{margin-top:24px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af;text-align:center}
-@media print{body{padding:12px}.cards{grid-template-columns:repeat(4,1fr)}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}.card{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+*{box-sizing:border-box;margin:0;padding:0}
+@page{margin:10mm}
+body{font-family:'Cambria','Georgia','Times New Roman',serif;padding:22px;color:#1e2a26;background:#fffdf7;font-size:12.5px;line-height:1.45}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:12px;border-bottom:3px solid #a9782f}
+.header-left h1{font-size:22px;font-weight:700;color:#1e2a26;margin-bottom:3px;letter-spacing:.01em}.header-left p{font-size:12px;color:#59665e}
+.header-right{text-align:right;font-size:11px;color:#59665e;line-height:1.7}
+.period-badge{display:inline-block;background:#f1e7ce;border:1px solid #d7b26d;color:#8a6224;border-radius:3px;padding:4px 10px;font-size:11px;font-weight:700;margin-top:5px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#cbc4a8;border:1px solid #cbc4a8;margin:16px 0}
+.card{border:0;padding:12px;background:#f8f6ec;min-height:62px}
+.card.green{background:#e4ebe1}.card.red{background:#f3e4e0}
+.k{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#59665e;font-weight:700}.v{font-size:20px;font-weight:700;margin-top:5px;color:#1e2a26}
+h2{font-size:15px;font-weight:700;margin:19px 0 8px;display:flex;align-items:center;gap:8px;color:#1e2a26;border-bottom:1px solid #cbc4a8;padding-bottom:5px}
+h2 span{font-size:11px;font-weight:400;color:#59665e}
+table{width:100%;border-collapse:collapse;margin-top:6px;page-break-inside:auto}
+thead{display:table-header-group}tfoot{display:table-row-group}tr{page-break-inside:avoid;page-break-after:auto}
+th{background:#1e2a26;color:#fffdf7;padding:7px 8px;text-align:left;border:1px solid #1e2a26;font-weight:700;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em}
+td{border:1px solid #d8d1b8;padding:6px 8px;font-size:11.5px;vertical-align:middle;color:#1e2a26}
+tfoot td{background:#f1e7ce;font-weight:700;color:#1e2a26}tr:nth-child(even) td{background:#fbf9ef}
+.footer{margin-top:22px;padding-top:10px;border-top:1px solid #cbc4a8;font-size:10px;color:#59665e;text-align:center}
+@media print{body{padding:0;background:#fff}.cards{grid-template-columns:repeat(4,1fr)}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head><body>
 <div class="header"><div class="header-left"><h1>${type==='client'?'Compte client':'Compte fournisseur'} - ${name}</h1><p>Ville : ${entity?.city||'-'}</p><div class="period-badge">Periode : ${periodLabel}</div></div><div class="header-right">Imprime le ${dateStr}<br>a ${timeStr}<br>${hidePm2?'<span style="color:#d97706;font-weight:600">Prix m2 masque</span>':''}</div></div>
 <div class="cards"><div class="card"><div class="k">Solde initial</div><div class="v">${dh(sum.init)}</div></div><div class="card"><div class="k">${type==='client'?'Total ventes':'Operations'}</div><div class="v">${dh(type==='client'?totalSalesFiltered:totalOpsFiltered)}</div></div>${type==='client'&&totalBuybacksFiltered>0?`<div class="card" style="border-color:#fca5a5"><div class="k">Total rachats</div><div class="v" style="color:#dc2626">-${dh(totalBuybacksFiltered)}</div></div>`:''}<div class="card"><div class="k">Paiements (periode)</div><div class="v">${dh(totalPayFiltered)}</div></div><div class="card ${sum.balance>0?'green':'red'}"><div class="k">Solde global restant</div><div class="v" style="color:${sum.balance>0?'#059669':'#dc2626'}">${dh(sum.balance)}</div></div></div>
@@ -2483,45 +2486,45 @@ async function buildJsPDF(type,name,entity,sum,r){
     window._camB=true;
   }catch(e){}
   let y=20;
-  doc.setFillColor(30,58,95);doc.rect(0,0,210,34,'F');
+  doc.setFillColor(30,42,38);doc.rect(0,0,210,34,'F');
   FS(16);FC(255,255,255);TX('Nom Client : '+name,ml,20);
-  FS(8);FC(200,215,240);TX('Ville : '+(entity?.city||'-'),ml,28);
-  doc.setFillColor(59,130,246);doc.roundedRect(150,8,44,7,2,2,'F');
+  FS(8);FC(231,220,193);TX('Ville : '+(entity?.city||'-'),ml,28);
+  doc.setFillColor(169,120,47);doc.roundedRect(150,8,44,7,1,1,'F');
   FS(7);FC(255,255,255);TX('Relev\u00e9e de compte',163,13.5,{align:'center'});
-  FS(7);FC(200,215,240);TX(rangeStr,190,22,{align:'right'});
+  FS(7);FC(231,220,193);TX(rangeStr,190,22,{align:'right'});
   y=40;
-  FS(16);FC(30,41,59);TX('SayfoFlex ERP',ml,y);
+  FS(16);FC(30,42,38);TX('SayfoFlex ERP',ml,y);
   FS(8);FC(100,116,139);TX(r.filteredOps.length+' op\u00e9rations, '+r.filteredPay.length+' paiements',190,y,{align:'right'});
   y+=7;
   FS(7);FC(100,116,139);TX('Application de gestion de l\u2019entreprise professionnel d\u00e9velopp\u00e9 par Sayfo Flex',ml,y);
   y+=8;
   const hasBuybacks=type==='client'&&r.totalBuybacksFiltered>0;
   const cards=[
-    {bg:[239,246,255],lb:'Solde initial',val:r.init,vc:[29,78,216]},
-    {bg:[245,243,255],lb:hasBuybacks?'Total ventes':'Op\u00e9rations (p\u00e9riode)',val:dh(hasBuybacks?r.totalSalesFiltered:r.totalOpsFiltered),vc:[124,58,237]},
-    ...(hasBuybacks?[{bg:[254,242,242],lb:'Total rachats',val:'-'+dh(r.totalBuybacksFiltered),vc:[220,38,38]}]:[]),
-    {bg:[255,247,237],lb:'Paiements (p\u00e9riode)',val:dh(r.totalPayFiltered),vc:[234,88,12]},
-    {bg:sum.balance>0?[240,253,244]:[254,242,242],lb:'Solde restant',val:dh(sum.balance),vc:sum.balance>0?[22,163,74]:[220,38,38]}
+    {bg:[248,246,236],lb:'Solde initial',val:r.init,vc:[169,120,47]},
+    {bg:[241,231,206],lb:hasBuybacks?'Total ventes':'Op\u00e9rations (p\u00e9riode)',val:dh(hasBuybacks?r.totalSalesFiltered:r.totalOpsFiltered),vc:[138,98,36]},
+    ...(hasBuybacks?[{bg:[243,228,224],lb:'Total rachats',val:'-'+dh(r.totalBuybacksFiltered),vc:[150,51,43]}]:[]),
+    {bg:[241,238,224],lb:'Paiements (p\u00e9riode)',val:dh(r.totalPayFiltered),vc:[76,107,79]},
+    {bg:sum.balance>0?[228,235,225]:[243,228,224],lb:'Solde restant',val:dh(sum.balance),vc:sum.balance>0?[76,107,79]:[150,51,43]}
   ];
   const cw=(w-12)/cards.length;
   cards.forEach((c,i)=>{
     const cx=ml+i*(cw+4)+1;
     doc.setFillColor(c.bg[0],c.bg[1],c.bg[2]);doc.roundedRect(cx,y,cw,18,2,2,'F');
     doc.setFillColor(c.vc[0],c.vc[1],c.vc[2]);doc.circle(cx+3.5,y+3,1.5,'F');
-    FC(71,85,105);FS(7);TX(c.lb,cx+7,y+3.5);
+    FC(89,102,94);FS(7);TX(c.lb,cx+7,y+3.5);
     FC(c.vc[0],c.vc[1],c.vc[2]);FS(12);TX(c.val,cx+3,y+13);
   });
   y+=24;
-  y+=4;FS(10);FC(30,41,59);TX('Op\u00e9rations ('+r.filteredOps.length+')',ml,y);y+=6;
+  y+=4;FS(10);FC(30,42,38);TX('Op\u00e9rations ('+r.filteredOps.length+')',ml,y);y+=6;
   const opsHead=[{text:'#',colW:8},{text:'Date',colW:15},{text:'Type',colW:14},{text:'Article',colW:24},{text:'Couleur',colW:14},{text:'Dim.',colW:16},{text:'Site',colW:16},{text:'Qt\u00e9',colW:10},{text:'Surface',colW:14},{text:'Prix m2',colW:14},{text:'Total',colW:17}];
   const opsBody=r.filteredOps.map(x=>[String(r.filteredOps.indexOf(x)+1),x.date||'',operationKind(x),x.article||'',x.color||'-',(x.length||0)+'x'+(x.width||0),siteName(x.site),String(x.qty||0),sqm(surface(x.length,x.width,x.qty)),dh(x.pm2),x.isBuyback?'-'+dh(x.total):dh(x.total)]);
-  opsBody.push([{content:'TOTAL OP\u00c9RATIONS',colSpan:10,styles:{halign:'left',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}},{content:dh(r.totalOpsFiltered),styles:{halign:'right',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}}]);
-  FN();doc.autoTable({startY:y,head:[opsHead.map(h=>({content:h.text,styles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7,fontStyle:'bold',halign:'center',cellPadding:1.5}}))],body:opsBody,theme:'plain',margin:{left:ml,right:ml},tableWidth:w,columnStyles:opsHead.reduce((a,h)=>(a[h.text]={cellWidth:h.colW,halign:'center'},a),{}),headStyles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7,fontStyle:'bold'},bodyStyles:{fontSize:7,cellPadding:1.5},alternateRowStyles:{fillColor:[248,250,252]},didDrawPage:function(d){y=d.cursor.y}});
-  y+=8;FS(10);FC(30,41,59);TX('Paiements ('+r.filteredPay.length+')',ml,y);y+=6;
+  opsBody.push([{content:'TOTAL OP\u00c9RATIONS',colSpan:10,styles:{halign:'left',fontStyle:'bold',fillColor:[241,231,206],textColor:[30,42,38]}},{content:dh(r.totalOpsFiltered),styles:{halign:'right',fontStyle:'bold',fillColor:[241,231,206],textColor:[30,42,38]}}]);
+  FN();doc.autoTable({startY:y,head:[opsHead.map(h=>({content:h.text,styles:{fillColor:[30,42,38],textColor:[255,253,247],fontSize:7,fontStyle:'bold',halign:'center',cellPadding:1.5}}))],body:opsBody,theme:'plain',margin:{left:ml,right:ml},tableWidth:w,columnStyles:opsHead.reduce((a,h)=>(a[h.text]={cellWidth:h.colW,halign:'center'},a),{}),headStyles:{fillColor:[30,42,38],textColor:[255,253,247],fontSize:7,fontStyle:'bold'},bodyStyles:{fontSize:7,cellPadding:1.5},alternateRowStyles:{fillColor:[251,249,239]},didDrawPage:function(d){y=d.cursor.y}});
+  y+=8;FS(10);FC(30,42,38);TX('Paiements ('+r.filteredPay.length+')',ml,y);y+=6;
   const payHead=[{text:'#',colW:8},{text:'Date',colW:18},{text:'Montant',colW:22},{text:'Mode',colW:18},{text:'\u00c9ch\u00e9ance',colW:20},{text:'Statut',colW:18},{text:'Remarque',colW:w-8-18-22-18-20-18}];
   const payBody=r.filteredPay.map(p=>[String(r.filteredPay.indexOf(p)+1),p.date||'',dh(p.amount),p.mode||'',p.due||'-',paymentStatus(p),p.note||'-']);
-  payBody.push([{content:'TOTAL PAIEMENTS',colSpan:2,styles:{halign:'left',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}},{content:dh(r.totalPayFiltered),styles:{halign:'right',fontStyle:'bold',fillColor:[241,245,249],textColor:[30,41,59]}},'','','','']);
-  FN();doc.autoTable({startY:y,head:[payHead.map(h=>({content:h.text,styles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7,fontStyle:'bold',halign:'center',cellPadding:1.5}}))],body:payBody,theme:'plain',margin:{left:ml,right:ml},tableWidth:w,columnStyles:payHead.reduce((a,h)=>(a[h.text]={cellWidth:h.colW,halign:'center'},a),{}),headStyles:{fillColor:[30,41,59],textColor:[255,255,255],fontSize:7,fontStyle:'bold'},bodyStyles:{fontSize:7,cellPadding:1.5},alternateRowStyles:{fillColor:[248,250,252]},didDrawPage:function(d){y=d.cursor.y}});
+  payBody.push([{content:'TOTAL PAIEMENTS',colSpan:2,styles:{halign:'left',fontStyle:'bold',fillColor:[241,231,206],textColor:[30,42,38]}},{content:dh(r.totalPayFiltered),styles:{halign:'right',fontStyle:'bold',fillColor:[241,231,206],textColor:[30,42,38]}},'','','','']);
+  FN();doc.autoTable({startY:y,head:[payHead.map(h=>({content:h.text,styles:{fillColor:[30,42,38],textColor:[255,253,247],fontSize:7,fontStyle:'bold',halign:'center',cellPadding:1.5}}))],body:payBody,theme:'plain',margin:{left:ml,right:ml},tableWidth:w,columnStyles:payHead.reduce((a,h)=>(a[h.text]={cellWidth:h.colW,halign:'center'},a),{}),headStyles:{fillColor:[30,42,38],textColor:[255,253,247],fontSize:7,fontStyle:'bold'},bodyStyles:{fontSize:7,cellPadding:1.5},alternateRowStyles:{fillColor:[251,249,239]},didDrawPage:function(d){y=d.cursor.y}});
   FS(6);FC(148,163,184);TX('SayfoFlex \u2014 Document g\u00e9n\u00e9r\u00e9 le '+dateStr,105,y+10,{align:'center'});
   return{doc,mm:doc.internal.pageSize};
 }
@@ -2778,35 +2781,31 @@ window.printBeneficeComplet=function(){
   w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Rapport Benefice - GestStock ERP</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',system-ui,sans-serif;color:#111;background:#fff;padding:32px;font-size:13px}
-.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #1a56db}
-.header h1{font-size:24px;font-weight:700;color:#1a56db}
-.header p{font-size:12px;color:#6b7280;margin-top:4px}
-.meta{text-align:right;font-size:11px;color:#6b7280}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
-.kpi{border-radius:10px;padding:14px;color:#fff}
-.kpi.green{background:linear-gradient(135deg,#059669,#047857)}
-.kpi.red{background:linear-gradient(135deg,#dc2626,#b91c1c)}
-.kpi.blue{background:linear-gradient(135deg,#1a56db,#7c3aed)}
-.kpi.purple{background:linear-gradient(135deg,#7c3aed,#5b21b6)}
-.kpi .k{font-size:10px;opacity:.75;text-transform:uppercase;letter-spacing:.08em}
-.kpi .v{font-size:22px;font-weight:700;margin-top:5px}
-.bars{border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px}
+@page{margin:10mm}
+body{font-family:'Cambria','Georgia','Times New Roman',serif;color:#1e2a26;background:#fffdf7;padding:24px;font-size:12.5px;line-height:1.45}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;padding-bottom:14px;border-bottom:3px solid #a9782f}
+.header h1{font-size:24px;font-weight:700;color:#1e2a26}
+.header p{font-size:12px;color:#59665e;margin-top:4px}
+.meta{text-align:right;font-size:11px;color:#59665e}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#cbc4a8;border:1px solid #cbc4a8;margin:20px 0}
+.kpi{border-radius:0;padding:13px;color:#1e2a26;background:#f8f6ec}
+.kpi.green{background:#e4ebe1;color:#1e2a26}.kpi.red{background:#f3e4e0;color:#1e2a26}.kpi.blue{background:#f1e7ce;color:#1e2a26}.kpi.purple{background:#e6e2f0;color:#1e2a26}
+.kpi .k{font-size:10px;color:#59665e;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.kpi .v{font-size:22px;font-weight:700;margin-top:5px;color:#1e2a26}
+.bars{border:1px solid #cbc4a8;border-radius:3px;padding:14px;margin-bottom:16px;background:#fffdf7}
 .bar-row{margin-bottom:10px}
 .bar-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
-.bar-track{background:#f3f4f6;border-radius:999px;height:8px;overflow:hidden}
-.bar-fill{height:100%;border-radius:999px}
-.interp{border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;line-height:1.7}
-.section-title{font-size:15px;font-weight:700;margin:24px 0 10px;padding-bottom:6px;border-bottom:2px solid #e5e7eb;display:flex;align-items:center;gap:8px}
-table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12px}
-th{background:#f8fafc;padding:8px 10px;text-align:left;border:1px solid #e5e7eb;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280}
-td{border:1px solid #e5e7eb;padding:7px 10px;vertical-align:middle}
-tfoot td{background:#f0fdf4;font-weight:700}
-tr:nth-child(even) td{background:#fafafa}
-.pos{color:#059669;font-weight:700}
-.neg{color:#dc2626;font-weight:700}
-.footer{margin-top:28px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;text-align:center}
-@media print{body{padding:16px}.kpis{grid-template-columns:repeat(4,1fr)}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}.kpi{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.bar-track{background:#f1eee0;border-radius:999px;height:8px;overflow:hidden}.bar-fill{height:100%;border-radius:999px}
+.interp{border-radius:3px;padding:14px;margin-bottom:20px;font-size:13px;line-height:1.7;border:1px solid #cbc4a8;background:#f8f6ec}
+.section-title{font-size:15px;font-weight:700;margin:24px 0 10px;padding-bottom:6px;border-bottom:2px solid #a9782f;display:flex;align-items:center;gap:8px;color:#1e2a26}
+table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:11.5px;page-break-inside:auto}
+thead{display:table-header-group}tfoot{display:table-row-group}tr{page-break-inside:avoid;page-break-after:auto}
+th{background:#1e2a26;color:#fffdf7;padding:7px 8px;text-align:left;border:1px solid #1e2a26;font-weight:700;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em}
+td{border:1px solid #d8d1b8;padding:6px 8px;vertical-align:middle;color:#1e2a26}
+tfoot td{background:#f1e7ce;font-weight:700}tr:nth-child(even) td{background:#fbf9ef}
+.pos{color:#38513b;font-weight:700}.neg{color:#96332b;font-weight:700}
+.footer{margin-top:26px;padding-top:12px;border-top:1px solid #cbc4a8;font-size:10px;color:#59665e;text-align:center}
+@media print{body{padding:0;background:#fff}.kpis{grid-template-columns:repeat(4,1fr)}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head><body>
 
 <div class="header">
