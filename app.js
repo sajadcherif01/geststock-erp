@@ -286,9 +286,9 @@ function initSupabase(){
   supabaseClient=window.supabase.createClient(supabaseUrl,supabaseAnonKey);
   supabaseClient.auth.onAuthStateChange((event,session)=>{
     if(event==='SIGNED_IN'&&session?.user){
-      setLoggedUser({id:`auth-${session.user.id}`,name:session.user.email||'Utilisateur invite',role:'visitor',auth:true},true);
+      setLoggedUser(authUserFromSession(session.user),true);
       $('role-modal').style.display='none';
-      notify('Connexion par email reussie. Mode visiteur actif.');
+      notify(`Connexion par email reussie. Mode ${isAdmin()?'admin':'visiteur'} actif.`);
     }
   });
   updateSyncStatus();
@@ -298,8 +298,13 @@ async function restoreSupabaseAuthSession(){
   if(!supabaseClient)return false;
   const {data:{session}}=await supabaseClient.auth.getSession();
   if(!session?.user)return false;
-  setLoggedUser({id:`auth-${session.user.id}`,name:session.user.email||'Utilisateur invite',role:'visitor',auth:true},true);
+  setLoggedUser(authUserFromSession(session.user),true);
   return true;
+}
+function authUserFromSession(authUser){
+  const email=(authUser.email||'').trim().toLowerCase();
+  const appUser=users.find(u=>u.name.toLowerCase()===email);
+  return {id:`auth-${authUser.id}`,name:email||'Utilisateur invite',role:appUser?.role==='admin'?'admin':'visitor',auth:true};
 }
 async function sendSupabaseEmailLink(){
   const email=norm($('auth-email-input')?.value).toLowerCase();
