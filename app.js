@@ -2659,7 +2659,6 @@ function bindStaticEvents(){
     setTimeout(()=>$('login-name-input')?.focus(),50);
   });
   $('role-logout')?.addEventListener('click',async()=>{
-    if(currentUser){const u=users.find(x=>x.id===currentUser.id);if(u)u.keepOnline=false;save()}
     if(currentUser?.auth&&supabaseClient)await supabaseClient.auth.signOut();
     localStorage.removeItem('gs3_user');sessionStorage.removeItem('gs3_user');setLoggedUser(null);notify('Deconnecte')
   });
@@ -2672,8 +2671,6 @@ function bindStaticEvents(){
     if(user){
       $('role-modal').style.display='none';
       setLoggedUser(user,remember);
-      user.keepOnline=remember;
-      save();
       if(DEFAULT_PASSWORD_HASHES.has(user.passwordHash)){
         showForcePasswordChange(user);
         return;
@@ -2983,13 +2980,7 @@ idbTryLoad();
     await restoreSupabaseAuthSession();
   }
   if(!currentUser){
-    const keepUser=supabaseClient&&users.find(u=>u.keepOnline);
-    if(keepUser){
-      setLoggedUser(keepUser);
-      notify(`Connecte automatiquement : ${keepUser.name}`);
-    }else{
-      $('role-modal').style.display='flex';
-      setTimeout(()=>$('login-name-input')?.focus(),80);
-    }
+    $('role-modal').style.display='flex';
+    setTimeout(()=>$('login-name-input')?.focus(),80);
   }
 });
