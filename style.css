@@ -899,6 +899,19 @@ input[readonly]{
   .card,.table-wrap,.modal-box{border-radius:var(--radius)}
 }
 
+/* Phone touch and safe-area refinements. */
+@media(max-width:760px){
+  html{-webkit-text-size-adjust:100%}
+  body{overflow-x:hidden;padding-bottom:env(safe-area-inset-bottom)}
+  button,input,select,textarea{touch-action:manipulation}
+  .topbar{padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}
+  .main-tabs,.topbar-right,.side,.table-wrap{-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+  .table-wrap{touch-action:pan-x}
+  input,select,textarea{font-size:16px!important}
+  .modal-overlay{padding:8px max(8px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+  .modal-box{max-height:calc(100dvh - 16px - env(safe-area-inset-bottom));padding:16px}
+}
+
 
 /* ===== GESTSTOCK PRINT THEME - STYLE ONLY ===== */
 @media print{
