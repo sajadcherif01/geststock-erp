@@ -26,6 +26,10 @@ const DEFAULT_USERS=[
   {id:'u-admin',name:'admin',role:'admin',passwordHash:'03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'},
   {id:'u-visiteur',name:'visiteur',role:'visitor',passwordHash:'9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0'}
 ];
+// Public connection settings for the deployed GitHub Pages application.
+// This is a publishable Supabase key, never a service-role key.
+const DEPLOYED_SUPABASE_URL='https://xmzppkmydbdrhtpzhwqg.supabase.co';
+const DEPLOYED_SUPABASE_PUBLISHABLE_KEY='sb_publishable_ez0YpxgF4rrsRydwVeiPIQ_mRPIjMZw';
 const DEFAULT_PASSWORD_HASHES=new Set(DEFAULT_USERS.map(u=>u.passwordHash));
 let users=[];
 let currentUser=null;
@@ -37,8 +41,8 @@ let lastLocalUpdatedAt='';
 let remoteUpdateCount=0;
 let lastRemoteNotifTime=0;
 
-let supabaseUrl=localStorage.getItem('gs3_supabase_url')||'';
-let supabaseAnonKey=localStorage.getItem('gs3_supabase_anon_key')||'';
+let supabaseUrl=localStorage.getItem('gs3_supabase_url')||DEPLOYED_SUPABASE_URL;
+let supabaseAnonKey=localStorage.getItem('gs3_supabase_anon_key')||DEPLOYED_SUPABASE_PUBLISHABLE_KEY;
 let supabaseClient=null;
 let supabaseChannel=null;
 let supabaseSaveTimer=null;
@@ -157,7 +161,7 @@ function requireAdmin(){
   return false;
 }
 function setLoggedUser(user,remember){
-  currentUser=user?{id:user.id,name:user.name,role:user.role}:null;
+  currentUser=user?{id:user.id,name:user.name,role:user.role,auth:!!user.auth}:null;
   currentRole=currentUser?.role==='admin'?'admin':'visitor';
   const storage=remember?localStorage:sessionStorage;
   if(currentUser)storage.setItem('gs3_user',JSON.stringify(currentUser));
@@ -280,8 +284,30 @@ function scheduleRemoteSave(){
 function initSupabase(){
   if(!supabaseUrl||!supabaseAnonKey||!window.supabase)return false;
   supabaseClient=window.supabase.createClient(supabaseUrl,supabaseAnonKey);
+  supabaseClient.auth.onAuthStateChange((event,session)=>{
+    if(event==='SIGNED_IN'&&session?.user){
+      setLoggedUser({id:`auth-${session.user.id}`,name:session.user.email||'Utilisateur invite',role:'visitor',auth:true},true);
+      $('role-modal').style.display='none';
+      notify('Connexion par email reussie. Mode visiteur actif.');
+    }
+  });
   updateSyncStatus();
   return true;
+}
+async function restoreSupabaseAuthSession(){
+  if(!supabaseClient)return false;
+  const {data:{session}}=await supabaseClient.auth.getSession();
+  if(!session?.user)return false;
+  setLoggedUser({id:`auth-${session.user.id}`,name:session.user.email||'Utilisateur invite',role:'visitor',auth:true},true);
+  return true;
+}
+async function sendSupabaseEmailLink(){
+  const email=norm($('auth-email-input')?.value).toLowerCase();
+  if(!email)return notify('Entrez votre adresse email invitee.',true);
+  if(!supabaseClient)return notify('Connexion Supabase indisponible.',true);
+  const {error}=await supabaseClient.auth.signInWithOtp({email,options:{emailRedirectTo:'https://sajadcherif01.github.io/geststock-erp/'}});
+  if(error)return notify(error.message||"Cette adresse n'est pas invitee.",true);
+  notify('Lien de connexion envoye. Verifiez votre email.');
 }
 function saveSupabaseConfig(){
   if(!requireAdmin())return;
@@ -2632,8 +2658,9 @@ function bindStaticEvents(){
     $('role-modal').style.display='flex';
     setTimeout(()=>$('login-name-input')?.focus(),50);
   });
-  $('role-logout')?.addEventListener('click',()=>{
+  $('role-logout')?.addEventListener('click',async()=>{
     if(currentUser){const u=users.find(x=>x.id===currentUser.id);if(u)u.keepOnline=false;save()}
+    if(currentUser?.auth&&supabaseClient)await supabaseClient.auth.signOut();
     localStorage.removeItem('gs3_user');sessionStorage.removeItem('gs3_user');setLoggedUser(null);notify('Deconnecte')
   });
   $('admin-code-cancel')?.addEventListener('click',()=>{if(currentUser)$('role-modal').style.display='none';});
@@ -2658,6 +2685,8 @@ function bindStaticEvents(){
   });
   $('admin-code-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')$('admin-code-ok').click();});
   $('login-name-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')$('admin-code-ok').click();});
+  $('auth-email-send')?.addEventListener('click',sendSupabaseEmailLink);
+  $('auth-email-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')sendSupabaseEmailLink();});
 
   // Close modals on overlay click
   document.querySelectorAll('.modal-overlay').forEach(m=>{
@@ -2948,8 +2977,11 @@ refresh();
 isApplyingRemote=false;
 initSupabase();
 idbTryLoad();
-(supabaseClient?loadFromSupabase(true):Promise.resolve()).then(()=>{
-  if(supabaseClient)subscribeSupabaseRealtime();
+(supabaseClient?loadFromSupabase(true):Promise.resolve()).then(async()=>{
+  if(supabaseClient){
+    subscribeSupabaseRealtime();
+    await restoreSupabaseAuthSession();
+  }
   if(!currentUser){
     const keepUser=supabaseClient&&users.find(u=>u.keepOnline);
     if(keepUser){
