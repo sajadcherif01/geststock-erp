@@ -2180,6 +2180,12 @@ function confirmSession(type){
    else if(type==='buyback'){thead='<tr><th>#</th><th>Date</th><th>Client</th><th>Article</th><th>Couleur</th><th>Long.</th><th>Larg.</th><th>Qte</th><th>Total</th></tr>';tbody=sessionLines.buyback.map((r,i)=>`<tr><td>${i+1}</td><td>${h(r.date)}</td><td>${h(r.client)}</td><td>${h(r.article)}</td><td>${h(r.color)}</td><td>${h(r.length)}</td><td>${h(r.width)}</td><td>${h(r.qty)}</td><td>${dh(r.total)}</td></tr>`).join('');}
   $('confirm-modal-thead').innerHTML=thead;
   $('confirm-modal-tbody').innerHTML=tbody;
+  const lines=sessionLines[type];
+  const isInventory=type==='inventory';
+  const totalQuantity=lines.reduce((sum,row)=>sum+(isInventory?num(row.adjust):num(row.qty)),0);
+  const totalSurface=lines.reduce((sum,row)=>sum+surface(row.length,row.width,isInventory?num(row.adjust):num(row.qty)),0);
+  const columnCount=(thead.match(/<th>/g)||[]).length;
+  $('confirm-modal-tfoot').innerHTML=`<tr><td colspan="${Math.max(1,columnCount-2)}"><strong>Total quantité</strong></td><td colspan="2"><strong>${isInventory&&totalQuantity>0?'+':''}${totalQuantity}</strong></td></tr><tr><td colspan="${Math.max(1,columnCount-2)}"><strong>Superficie totale</strong></td><td colspan="2"><strong>${sqm(totalSurface)}</strong></td></tr>`;
   confirmCallback=function(){
     if(type==='purchase')sessionLines.purchase.forEach(r=>{
       db.purchases.push({id:uid('pur'),...r});
