@@ -15,8 +15,8 @@ const deepClone=v=>JSON.parse(JSON.stringify(v));
 let forcePwUser=null;
 
 // â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬ DB â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬
-const CKEYS=['articles','clients','suppliers','sites','purchases','sales','transfers','inventories','clientPrices','supplierPrices','payments','rolls','rollCuts'];
-let db={articles:[],clients:[],suppliers:[],sites:[],purchases:[],sales:[],transfers:[],inventories:[],clientPrices:[],supplierPrices:[],payments:[],rolls:[],rollCuts:[]};
+const CKEYS=['articles','clients','suppliers','sites','purchases','sales','transfers','inventories','clientPrices','supplierPrices','payments','rolls','rollCuts','documents'];
+let db={articles:[],clients:[],suppliers:[],sites:[],purchases:[],sales:[],transfers:[],inventories:[],clientPrices:[],supplierPrices:[],payments:[],rolls:[],rollCuts:[],documents:[]};
 let sessionLines={purchase:[],sale:[],transfer:[],inventory:[],buyback:[]};
 let edit={article:-1,client:-1,supplier:-1,site:-1,cp:-1,sp:-1};
 let view={clientAccount:'',supplierAccount:''};
@@ -353,8 +353,8 @@ async function loadFromSupabase(silent=false){
         isApplyingRemote=true;
         TABLE_KEYS.forEach((key,i)=>{db[key]=allData[i].map(r=>rowToObj(TABLE_MAP[key],r))});
         if(userData&&userData.length>0)users=userData.map(rowToUser);
-        // Recover buyback flags from blob (for data synced before [RACHAT] convention)
-        try{const{data:bs}=await supabaseClient.from('geststock_state').select('payload').eq('id',SUPABASE_STATE_ID).single();if(bs?.payload?.data?.sales){const bm=new Map();bs.payload.data.sales.filter(s=>s.isBuyback).forEach(s=>bm.set(s.id,true));db.sales.forEach(s=>{if(bm.has(s.id))s.isBuyback=true})}}catch(e){}
+        // Le blob conserve les informations complémentaires non présentes dans les tables relationnelles.
+        try{const{data:bs}=await supabaseClient.from('geststock_state').select('payload').eq('id',SUPABASE_STATE_ID).single();if(bs?.payload?.data?.sales){const bm=new Map();bs.payload.data.sales.filter(s=>s.isBuyback).forEach(s=>bm.set(s.id,true));db.sales.forEach(s=>{if(bm.has(s.id))s.isBuyback=true})}db.documents=Array.isArray(bs?.payload?.data?.documents)?bs.payload.data.documents:[]}catch(e){db.documents=[]}
         save({remote:false});
         refresh();
         isApplyingRemote=false;
@@ -1034,6 +1034,27 @@ function renderUsersPanel(){
   $('backup-import-input')?.addEventListener('change',e=>{importBackupFile(e.target.files?.[0]);e.target.value='';},{once:true});
 }
 
+// â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬ DOCUMENTS D'OPERATION â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬
+const documentMeta={sale:{prefix:'BL',label:'Bon de livraison',partyLabel:'Client',partyKey:'client'},buyback:{prefix:'RET',label:'Retour client',partyLabel:'Client',partyKey:'client'},purchase:{prefix:'BAF',label:'Bon d’achat fournisseur',partyLabel:'Fournisseur',partyKey:'supplier'}};
+function documentTotals(doc){const lines=doc.lines||[];return{quantity:lines.reduce((sum,line)=>sum+num(line.qty),0),surface:lines.reduce((sum,line)=>sum+surface(line.length,line.width,line.qty),0),amount:lines.reduce((sum,line)=>sum+num(line.total),0)}}
+function nextDocumentReference(type,date){const meta=documentMeta[type],stamp=String(date||today()).replaceAll('-','');const base=`${meta.prefix}-${stamp}-`;const used=(db.documents||[]).filter(doc=>String(doc.reference||'').startsWith(base)).map(doc=>num(String(doc.reference).slice(base.length)));return `${base}${String((used.length?Math.max(...used):0)+1).padStart(3,'0')}`}
+function createOperationDocuments(type,lines){
+  const meta=documentMeta[type];if(!meta||!lines?.length)return;
+  const groups=new Map();
+  lines.forEach(line=>{const party=norm(line[meta.partyKey])||'Sans partenaire',date=line.date||today(),key=`${party}\u0000${date}`;if(!groups.has(key))groups.set(key,{party,date,lines:[]});groups.get(key).lines.push({...line});});
+  groups.forEach(group=>{const entity=(meta.partyKey==='client'?db.clients:db.suppliers).find(x=>x.name===group.party);db.documents.push({id:uid('doc'),type,reference:nextDocumentReference(type,group.date),title:meta.label,party:group.party,partyLabel:meta.partyLabel,city:entity?.city||'',date:group.date,createdAt:new Date().toISOString(),lines:group.lines});});
+}
+function renderOperationDocuments(){
+  const docs=(db.documents||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.createdAt).localeCompare(String(a.createdAt)));
+  return `<div class="section-divider"></div><div class="panel-head"><div><h2>Dossiers BL et documents</h2><p>Documents créés automatiquement lors de la confirmation des ventes, retours et achats.</p></div></div><div class="table-wrap"><table class="table"><thead><tr><th>Référence</th><th>Document</th><th>Client / Fournisseur</th><th>Date</th><th>Lignes</th><th>Qté totale</th><th>Superficie</th><th>Action</th></tr></thead><tbody>${docs.length?docs.map(doc=>{const totals=documentTotals(doc);return `<tr><td><strong>${h(doc.reference)}</strong></td><td><span class="badge ${doc.type==='sale'?'b-ok':doc.type==='buyback'?'b-warn':'b-brand'}">${h(doc.title||documentMeta[doc.type]?.label||'Document')}</span></td><td>${h(doc.party)}${doc.city?`<div style="font-size:11px;color:var(--mut)">${h(doc.city)}</div>`:''}</td><td>${h(doc.date)}</td><td>${(doc.lines||[]).length}</td><td><strong>${totals.quantity}</strong></td><td>${sqm(totals.surface)}</td><td><button class="btn sm alt" onclick="printOperationDocument('${attr(doc.id)}')">Imprimer</button></td></tr>`}).join(''):`<tr><td class="empty" colspan="8">Aucun BL ou document créé. Ils apparaîtront après la confirmation d’une vente, d’un retour ou d’un achat.</td></tr>`}</tbody></table></div>`;
+}
+function buildOperationDocumentHTML(doc){
+  const meta=documentMeta[doc.type]||{};const totals=documentTotals(doc);const dateStr=new Date().toLocaleDateString('fr-MA',{day:'2-digit',month:'long',year:'numeric'});const rows=(doc.lines||[]).map((line,index)=>`<tr><td>${index+1}</td><td>${h(line.article||'-')}</td><td>${h(line.color||'-')}</td><td>${h(line.length||0)} x ${h(line.width||0)} cm</td><td>${num(line.qty)}</td><td>${sqm(surface(line.length,line.width,line.qty))}</td>${doc.type==='purchase'?`<td>${dh(line.total)}</td>`:''}</tr>`).join('')||'<tr><td colspan="7">Aucune ligne</td></tr>';
+  const amountColumn=doc.type==='purchase'?'<th>Total</th>':'';const amountTotal=doc.type==='purchase'?`<td><strong>${dh(totals.amount)}</strong></td>`:'';
+  return `<!doctype html><html lang="fr"><head><meta charset="UTF-8"><title>${h(doc.reference)}</title><style>@page{margin:12mm}body{font-family:Arial,sans-serif;color:#172033;font-size:12px}header{display:flex;justify-content:space-between;border-bottom:3px solid #0f766e;padding-bottom:14px;margin-bottom:20px}h1{margin:0;color:#0f766e;font-size:25px}h2{font-size:15px;margin:24px 0 8px}.ref{font-weight:bold;font-size:16px}.details{line-height:1.75;text-align:right}table{border-collapse:collapse;width:100%;margin-top:8px}th,td{border:1px solid #cbd5e1;padding:8px;text-align:left}th{background:#0f766e;color:white;font-size:11px;text-transform:uppercase}tfoot td{font-size:12px;background:#ecfdf5}.totals{display:flex;gap:12px;margin-top:16px}.total{border:1px solid #99f6e4;background:#f0fdfa;padding:11px 15px;min-width:170px}.total b{display:block;font-size:17px;margin-top:4px;color:#115e59}.footer{margin-top:28px;border-top:1px solid #cbd5e1;padding-top:10px;color:#64748b;font-size:10px;text-align:center}@media print{body{padding:0}}</style></head><body><header><div><h1>${h(doc.title||meta.label||'Document')}</h1><div class="ref">Référence : ${h(doc.reference)}</div></div><div class="details"><strong>${h(doc.partyLabel||meta.partyLabel||'Partenaire')} : ${h(doc.party)}</strong><br>Ville : ${h(doc.city||'-')}<br>Date : ${h(doc.date)}</div></header><h2>Détail des articles</h2><table><thead><tr><th>#</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Quantité</th><th>Superficie</th>${amountColumn}</tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="4"><strong>Total</strong></td><td><strong>${totals.quantity}</strong></td><td><strong>${sqm(totals.surface)}</strong></td>${amountTotal}</tr></tfoot></table><div class="totals"><div class="total">Quantité totale<b>${totals.quantity}</b></div><div class="total">Superficie totale<b>${sqm(totals.surface)}</b></div></div><div class="footer">Document généré le ${dateStr} — GestStock ERP</div></body></html>`;
+}
+function printOperationDocument(id){const doc=(db.documents||[]).find(item=>item.id===id);if(!doc)return notify('Document introuvable.',true);const win=window.open('','_blank','width=1000,height=800');if(!win)return;win.document.write(buildOperationDocumentHTML(doc));win.document.close();win.onload=()=>win.print();}
+
 // â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬ RENDER MOVEMENTS â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬
 function renderMovements(){
   // PURCHASE - achat fournisseur (pas inventaire)
@@ -1180,6 +1201,8 @@ function renderMovements(){
 
   $('mv-history').innerHTML=`
     <div class="panel-head"><div><h2>Historique mouvements</h2><p>Tous les achats, ventes et transferts.</p></div></div>
+    ${renderOperationDocuments()}
+    <div class="section-divider"></div><div class="section-title">Détail de tous les mouvements</div>
     <div class="table-wrap"><table class="table">
       <thead><tr><th>#</th><th>Date</th><th>Type</th><th>Article</th><th>Couleur</th><th>Dimensions</th><th>Site</th><th>Partenaire</th><th>Qte</th><th>Total</th><th>Note</th></tr></thead>
       <tbody>${hist.length?hist.map((r,i)=>`<tr><td>${i+1}</td><td>${h(r.date)}</td>
@@ -2187,6 +2210,7 @@ function confirmSession(type){
   const columnCount=(thead.match(/<th>/g)||[]).length;
   $('confirm-modal-tfoot').innerHTML=`<tr><td colspan="${Math.max(1,columnCount-2)}"><strong>Total quantité</strong></td><td colspan="2"><strong>${isInventory&&totalQuantity>0?'+':''}${totalQuantity}</strong></td></tr><tr><td colspan="${Math.max(1,columnCount-2)}"><strong>Superficie totale</strong></td><td colspan="2"><strong>${sqm(totalSurface)}</strong></td></tr>`;
   confirmCallback=function(){
+    createOperationDocuments(type,sessionLines[type]);
     if(type==='purchase')sessionLines.purchase.forEach(r=>{
       db.purchases.push({id:uid('pur'),...r});
       if(isMoquetteArticle(r.article)){
@@ -2725,6 +2749,7 @@ window.editClientPrice=editClientPrice;window.editSupplierPrice=editSupplierPric
 window.removeRow=removeRow;window.removeSite=removeSite;window.clearForm=clearForm;window.clearFormMv=clearFormMv;window.clearFormInv=clearFormInv;
 window.removeSessionLine=removeSessionLine;window.confirmSession=confirmSession;
 window.setAccountView=setAccountView;window.printAccount=printAccount;window.togglePrintOptions=togglePrintOptions;
+window.printOperationDocument=printOperationDocument;
 window.importExcelInventaire=importExcelInventaire;window.confirmExcelInventaire=confirmExcelInventaire;window.cancelExcelInventaire=cancelExcelInventaire;
 window.exportBackup=exportBackup;window.openResetStockModal=openResetStockModal;window.applyResetStock=applyResetStock;
 window.openEditLine=openEditLine;window.renderAnalytics=renderAnalytics;
