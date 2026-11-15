@@ -15,11 +15,11 @@ const deepClone=v=>JSON.parse(JSON.stringify(v));
 let forcePwUser=null;
 
 // â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬ DB â"â‚¬â"â‚¬â"â‚¬â"â‚¬â"â‚¬
-const CKEYS=['articles','clients','suppliers','sites','purchases','sales','transfers','inventories','clientPrices','supplierPrices','payments','rolls','rollCuts','documents'];
-let db={articles:[],clients:[],suppliers:[],sites:[],purchases:[],sales:[],transfers:[],inventories:[],clientPrices:[],supplierPrices:[],payments:[],rolls:[],rollCuts:[],documents:[]};
+const CKEYS=['articles','clients','suppliers','sites','purchases','sales','transfers','inventories','clientPrices','supplierPrices','payments','rolls','rollCuts','documents','colleagues','colleagueCompensations'];
+let db={articles:[],clients:[],suppliers:[],sites:[],purchases:[],sales:[],transfers:[],inventories:[],clientPrices:[],supplierPrices:[],payments:[],rolls:[],rollCuts:[],documents:[],colleagues:[],colleagueCompensations:[]};
 let sessionLines={purchase:[],sale:[],transfer:[],inventory:[],buyback:[]};
 let edit={article:-1,client:-1,supplier:-1,site:-1,cp:-1,sp:-1};
-let view={clientAccount:'',supplierAccount:''};
+let view={clientAccount:'',supplierAccount:'',colleagueAccount:''};
 let confirmCallback=null;
 let restoreData=null;
 const DEFAULT_USERS=[
@@ -184,7 +184,7 @@ function applyAccessMode(){
   const login=$('role-login'),logout=$('role-logout');
   if(login)login.style.display=currentUser?'none':'inline-flex';
   if(logout)logout.style.display=currentUser?'inline-flex':'none';
-  const writeNames=['saveArticle','saveClient','saveSupplier','saveSite','saveClientPrice','saveSupplierPrice','saveUser','deleteUser','savePurchase','saveSale','saveBuyback','saveTransfer','saveInventory','saveAccountPayment','confirmSession','removeRow','removeSite','removeSessionLine','openEditLine','editOperationRow','deleteOperationRow','editPayment','deletePayment','setPaymentPaidStatus','togglePaymentPaid','restoreFromHistory','promptClientFee','createClientFee','promptClientDiscount','createClientDiscount','editArticle','editClientRow','editSupplierRow','editSiteRow','editClientPrice','editSupplierPrice','clearForm','clearFormMv','clearFormInv','importExcelInventaire','confirmExcelInventaire','cancelExcelInventaire','applyResetStock','exportBackup','saveSupabaseConfig','manualSyncToSupabase','loadFromSupabase'];
+  const writeNames=['saveArticle','saveClient','saveSupplier','saveSite','saveColleague','saveColleagueCompensation','saveClientPrice','saveSupplierPrice','saveUser','deleteUser','savePurchase','saveSale','saveBuyback','saveTransfer','saveInventory','saveAccountPayment','confirmSession','removeRow','removeSite','removeSessionLine','openEditLine','editOperationRow','deleteOperationRow','editPayment','deletePayment','setPaymentPaidStatus','togglePaymentPaid','restoreFromHistory','promptClientFee','createClientFee','promptClientDiscount','createClientDiscount','editArticle','editClientRow','editSupplierRow','editSiteRow','editClientPrice','editSupplierPrice','clearForm','clearFormMv','clearFormInv','importExcelInventaire','confirmExcelInventaire','cancelExcelInventaire','applyResetStock','exportBackup','saveSupabaseConfig','manualSyncToSupabase','loadFromSupabase'];
   document.querySelectorAll('button').forEach(btn=>{
     const onclick=btn.getAttribute('onclick')||'';
     const id=btn.id||'';
@@ -195,7 +195,7 @@ function applyAccessMode(){
     else btn.disabled=false;
   });
   document.querySelectorAll('.quick-entry input,.quick-entry select,.form-grid input,.form-grid select').forEach(el=>{
-    const keepEnabled=['client-account-select','supplier-account-select','admin-code-input','login-name-input','supabase-url-input','supabase-key-input'].includes(el.id)||el.closest('#role-modal')||el.closest('[id$="-print-options"]');
+    const keepEnabled=['client-account-select','supplier-account-select','colleague-account-select','admin-code-input','login-name-input','supabase-url-input','supabase-key-input'].includes(el.id)||el.closest('#role-modal')||el.closest('[id$="-print-options"]');
     if(!isAdmin()&&!keepEnabled){
       el.setAttribute('readonly','readonly');
       if(el.tagName==='SELECT')el.disabled=true;
@@ -354,7 +354,7 @@ async function loadFromSupabase(silent=false){
         TABLE_KEYS.forEach((key,i)=>{db[key]=allData[i].map(r=>rowToObj(TABLE_MAP[key],r))});
         if(userData&&userData.length>0)users=userData.map(rowToUser);
         // Le blob conserve les informations complémentaires non présentes dans les tables relationnelles.
-        try{const{data:bs}=await supabaseClient.from('geststock_state').select('payload').eq('id',SUPABASE_STATE_ID).single();if(bs?.payload?.data?.sales){const bm=new Map();bs.payload.data.sales.filter(s=>s.isBuyback).forEach(s=>bm.set(s.id,true));db.sales.forEach(s=>{if(bm.has(s.id))s.isBuyback=true})}db.documents=Array.isArray(bs?.payload?.data?.documents)?bs.payload.data.documents:[]}catch(e){db.documents=[]}
+        try{const{data:bs}=await supabaseClient.from('geststock_state').select('payload').eq('id',SUPABASE_STATE_ID).single();if(bs?.payload?.data?.sales){const bm=new Map();bs.payload.data.sales.filter(s=>s.isBuyback).forEach(s=>bm.set(s.id,true));db.sales.forEach(s=>{if(bm.has(s.id))s.isBuyback=true})}db.documents=Array.isArray(bs?.payload?.data?.documents)?bs.payload.data.documents:[];db.colleagues=Array.isArray(bs?.payload?.data?.colleagues)?bs.payload.data.colleagues:[];db.colleagueCompensations=Array.isArray(bs?.payload?.data?.colleagueCompensations)?bs.payload.data.colleagueCompensations:[]}catch(e){db.documents=[];db.colleagues=[];db.colleagueCompensations=[]}
         save({remote:false});
         refresh();
         isApplyingRemote=false;
@@ -1416,7 +1416,36 @@ function renderAccounts(){
   $('acc-client').innerHTML=renderAccountPanel('client','Compte client');
   $('acc-supplier').innerHTML=renderAccountPanel('supplier','Compte fournisseur');
   if($('acc-finance'))$('acc-finance').innerHTML=renderFinancialSituation();
+  if($('acc-colleague'))$('acc-colleague').innerHTML=renderColleagueAccount();
   bindAccountTools();
+}
+function colleagueBalance(name){
+  const documents=(db.documents||[]).filter(doc=>doc.party===name);
+  const receivable=documents.filter(doc=>doc.type==='sale').reduce((sum,doc)=>sum+documentTotals(doc).amount,0);
+  const payable=documents.filter(doc=>doc.type==='purchase'||doc.type==='buyback').reduce((sum,doc)=>sum+documentTotals(doc).amount,0);
+  const compensations=(db.colleagueCompensations||[]).filter(item=>item.colleague===name);
+  const received=compensations.filter(item=>item.kind==='received').reduce((sum,item)=>sum+num(item.amount),0);
+  const paid=compensations.filter(item=>item.kind==='paid').reduce((sum,item)=>sum+num(item.amount),0);
+  return {documents,compensations,receivable,payable,received,paid,net:receivable-received-payable+paid};
+}
+function setColleagueView(value){view.colleagueAccount=value;refresh()}
+function renderColleagueAccount(){
+  const colleagues=db.colleagues||[];
+  const selected=view.colleagueAccount&&colleagues.some(item=>item.name===view.colleagueAccount)?view.colleagueAccount:(colleagues[0]?.name||'');
+  view.colleagueAccount=selected;
+  const balance=colleagueBalance(selected);
+  const references=(db.documents||[]).filter(doc=>doc.party===selected).map(doc=>doc.reference);
+  const documentRows=balance.documents.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(doc=>{const amount=documentTotals(doc).amount;const direction=doc.type==='sale'?'Il vous doit':`Vous lui devez`;return `<tr><td>${h(doc.date)}</td><td><strong>${h(doc.reference)}</strong></td><td>${h(doc.title||documentMeta[doc.type]?.label||'Document')}</td><td><span class="badge ${doc.type==='sale'?'b-ok':'b-warn'}">${direction}</span></td><td>${dh(amount)}</td><td><button class="btn sm alt" onclick="printOperationDocument('${attr(doc.id)}')">Imprimer</button></td></tr>`}).join('');
+  const compensationRows=balance.compensations.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(item=>`<tr><td>${h(item.date)}</td><td>${item.kind==='received'?'Règlement reçu':'Règlement versé'}</td><td>${h(item.reference||'—')}</td><td>${h(item.note||'—')}</td><td>${dh(item.amount)}</td></tr>`).join('');
+  const selectOptions=`<option value="">Sélectionner un confrère</option>${colleagues.map(item=>`<option value="${attr(item.name)}" ${item.name===selected?'selected':''}>${h(item.name)}</option>`).join('')}`;
+  const status=balance.net>0?`Le confrère vous doit ${dh(balance.net)}`:balance.net<0?`Vous devez ${dh(Math.abs(balance.net))} au confrère`:'Balance soldée';
+  return `<div class="panel-head"><div><h2>Compte confrère — Balance / rapprochement</h2><p>Module isolé : rapproche les montants des BL, retours et bons d’achat, sans affecter les opérations existantes.</p></div></div>
+    <div class="quick-entry"><h4>Ajouter un confrère</h4><div class="form-grid tight"><div class="field"><label>Nom du confrère</label><input id="colleague-name" placeholder="Nom complet"></div><div class="field"><label>Ville</label><input id="colleague-city" placeholder="Optionnel"></div></div><div class="toolbar"><button class="btn primary" onclick="saveColleague()">Ajouter confrère</button></div></div>
+    <div class="form-grid"><div class="field"><label>Confrère à rapprocher</label><select id="colleague-account-select" onchange="setColleagueView(this.value)">${selectOptions}</select></div></div>
+    ${selected?`<div class="summary"><div class="box"><div class="k">BL — il vous doit</div><div class="v" style="color:var(--ok)">${dh(balance.receivable)}</div></div><div class="box"><div class="k">Achats / retours — vous lui devez</div><div class="v" style="color:var(--danger)">${dh(balance.payable)}</div></div><div class="box"><div class="k">Règlements reçus</div><div class="v">${dh(balance.received)}</div></div><div class="box"><div class="k">Règlements versés</div><div class="v">${dh(balance.paid)}</div></div><div class="box"><div class="k">Solde net</div><div class="v" style="color:${balance.net>0?'var(--ok)':balance.net<0?'var(--danger)':'var(--ink)'}">${dh(Math.abs(balance.net))}</div><div style="font-size:11px;color:var(--mut);margin-top:4px">${status}</div></div></div>
+    <div class="quick-entry"><h4>Enregistrer une compensation</h4><div class="form-grid tight"><div class="field"><label>Date</label><input id="colleague-comp-date" type="date" value="${today()}"></div><div class="field"><label>Type</label><select id="colleague-comp-kind"><option value="received">Règlement reçu du confrère</option><option value="paid">Règlement versé au confrère</option></select></div><div class="field"><label>Montant</label><input id="colleague-comp-amount" type="number" min="0.01" step="0.01" placeholder="0.00"></div><div class="field"><label>Référence BL / document</label><input id="colleague-comp-reference" list="colleague-documents" placeholder="Optionnel"><datalist id="colleague-documents">${references.map(ref=>`<option value="${attr(ref)}">`).join('')}</datalist></div><div class="field"><label>Remarque</label><input id="colleague-comp-note" placeholder="Optionnel"></div></div><div class="toolbar"><button class="btn primary" onclick="saveColleagueCompensation()">Enregistrer compensation</button></div></div>
+    <div class="section-divider"></div><div class="section-title">BL et documents du confrère</div><div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Référence</th><th>Document</th><th>Sens</th><th>Montant</th><th>Action</th></tr></thead><tbody>${documentRows||'<tr><td class="empty" colspan="6">Aucun document associé. Le nom du confrère doit être identique au nom utilisé dans vos BL ou bons d’achat.</td></tr>'}</tbody></table></div>
+    <div class="section-divider"></div><div class="section-title">Compensations / règlements</div><div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Type</th><th>Référence</th><th>Remarque</th><th>Montant</th></tr></thead><tbody>${compensationRows||'<tr><td class="empty" colspan="5">Aucune compensation enregistrée.</td></tr>'}</tbody></table></div>`:`<div class="empty" style="margin-top:16px">Ajoutez puis sélectionnez un confrère pour consulter sa balance.</div>`}`;
 }
 function renderAccountPanel(type,title){
   const list=type==='client'?db.clients:db.suppliers;
@@ -1863,6 +1892,8 @@ function saveArticle(){const name=norm($('f-article-name').value),type=$('f-arti
 function saveClient(){const name=norm($('f-client-name').value),city=norm($('f-client-city').value),initial=num($('f-client-initial').value);if(!name||!city)return alert('Nom et ville requis');if(edit.client<0)db.clients.push({id:uid('cli'),name,city,initial});else db.clients[edit.client]={...db.clients[edit.client],name,city,initial};clearForm('client');save();refresh();notify('Client enregistre')}
 function saveSupplier(){const name=norm($('f-supplier-name').value),city=norm($('f-supplier-city').value),initial=num($('f-supplier-initial').value);if(!name||!city)return alert('Nom et ville requis');if(edit.supplier<0)db.suppliers.push({id:uid('sup'),name,city,initial});else db.suppliers[edit.supplier]={...db.suppliers[edit.supplier],name,city,initial};clearForm('supplier');save();refresh();notify('Fournisseur enregistre')}
 function saveSite(){const name=norm($('f-site-name').value),city=norm($('f-site-city').value);if(!name||!city)return alert('Nom et ville requis');if(edit.site<0)db.sites.push({id:uid('site'),name,city});else db.sites[edit.site]={...db.sites[edit.site],name,city};clearForm('site');save();refresh();notify('Site enregistre')}
+function saveColleague(){if(!requireAdmin())return;const name=norm($('colleague-name')?.value),city=norm($('colleague-city')?.value);if(!name)return alert('Nom du confrère requis');if((db.colleagues||[]).some(item=>item.name.toLowerCase()===name.toLowerCase()))return alert('Ce confrère existe déjà.');db.colleagues.push({id:uid('col'),name,city});view.colleagueAccount=name;save();refresh();notify('Confrère ajouté.');}
+function saveColleagueCompensation(){if(!requireAdmin())return;const colleague=view.colleagueAccount,date=$('colleague-comp-date')?.value||today(),kind=$('colleague-comp-kind')?.value,amount=num($('colleague-comp-amount')?.value),reference=norm($('colleague-comp-reference')?.value),note=norm($('colleague-comp-note')?.value);if(!colleague)return alert('Sélectionnez un confrère.');if(amount<=0)return alert('Montant requis.');db.colleagueCompensations.push({id:uid('cmp'),colleague,date,kind,amount,reference,note});save();refresh();notify('Compensation enregistrée.');}
 function saveClientPrice(){const client=$('f-cp-client').value,article=$('f-cp-article').value,pm2=num($('f-cp-pm2').value);if(!client||!article||pm2<=0)return alert('Client, article, prix requis');if(edit.cp<0)db.clientPrices.push({id:uid('cp'),client,article,pm2});else db.clientPrices[edit.cp]={...db.clientPrices[edit.cp],client,article,pm2};clearForm('cp');save();refresh();notify('Prix client enregistre')}
 function saveSupplierPrice(){const supplier=$('f-sp-supplier').value,article=$('f-sp-article').value,pm2=num($('f-sp-pm2').value);if(!supplier||!article||pm2<=0)return alert('Fournisseur, article, prix requis');if(edit.sp<0)db.supplierPrices.push({id:uid('sp'),supplier,article,pm2});else db.supplierPrices[edit.sp]={...db.supplierPrices[edit.sp],supplier,article,pm2};clearForm('sp');save();refresh();notify('Prix fournisseur enregistre')}
 function savePurchase(){
@@ -2741,6 +2772,7 @@ function initDefaults(){
 
 // Expose to global
 window.saveArticle=saveArticle;window.saveClient=saveClient;window.saveSupplier=saveSupplier;window.saveSite=saveSite;
+window.saveColleague=saveColleague;window.saveColleagueCompensation=saveColleagueCompensation;window.setColleagueView=setColleagueView;
 window.saveClientPrice=saveClientPrice;window.saveSupplierPrice=saveSupplierPrice;
 window.savePurchase=savePurchase;window.saveSale=saveSale;window.saveBuyback=saveBuyback;window.saveTransfer=saveTransfer;window.saveInventory=saveInventory;
 window.saveAccountPayment=saveAccountPayment;
